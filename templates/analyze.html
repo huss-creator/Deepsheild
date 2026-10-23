@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Analyze Image{% endblock %}
+{% block meta_description %}Upload an image to check it for deepfake manipulation.{% endblock %}
+
+{% block content %}
+<div class="container ds-page-container" style="max-width: 860px;">
+
+    <div class="ds-reveal mb-4">
+        <p style="color: var(--accent); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">
+            <i class="bi bi-cloud-upload me-1"></i>Image analysis
+        </p>
+        <h1 class="ds-page-title mb-1">Analyze an image</h1>
+        <p style="color: var(--text-secondary); font-size: 0.92rem;">Upload a photo to check it for deepfake manipulation.</p>
+    </div>
+
+    {# ---------- upload form ---------- #}
+    <form method="post" enctype="multipart/form-data" id="analyze-form" class="ds-reveal" novalidate>
+        {% csrf_token %}
+
+        <label for="id_image" class="ds-dropzone d-block" id="dropzone">
+            <i class="bi bi-image ds-dropzone-icon"></i>
+            <div class="ds-dropzone-text"><strong>Click to choose</strong> or drag &amp; drop an image here</div>
+            <div id="file-name" style="color: var(--text-muted); font-size: 0.82rem;">JPG, PNG or WEBP, up to 10 MB</div>
+            <img id="preview" alt="Selected image preview" class="ds-preview-img mt-3 d-none" style="max-height: 240px; border-radius: 10px;">
+        </label>
+        <input type="file" name="image" id="id_image" accept="image/jpeg,image/png,image/webp" class="d-none" required>
+
+        {% for err in form.image.errors %}
+            <div class="ds-field-error mt-2" style="color: #FCA5A5;"><i class="bi bi-exclamation-circle me-1"></i>{{ err }}</div>
+        {% endfor %}
+
+        <div class="mt-3">
+            <button type="submit" class="btn ds-btn-primary" id="submit-btn"><i class="bi bi-shield-check"></i> Analyze</button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    var input = document.getElementById('id_image'), zone = document.getElementById('dropzone');
+    var name = document.getElementById('file-name'), prev = document.getElementById('preview');
+    var form = document.getElementById('analyze-form'), btn = document.getElementById('submit-btn');
+    function show(file) {
+        if (!file) return;
+        name.textContent = file.name + ' (' + (file.size / 1048576).toFixed(2) + ' MB)';
+        var r = new FileReader();
+        r.onload = function (e) { prev.src = e.target.result; prev.classList.remove('d-none'); };
+        r.readAsDataURL(file);
+    }
+    input.addEventListener('change', function () { show(input.files[0]); });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+        zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('ds-dropzone-active'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+        zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('ds-dropzone-active'); });
+    });
+    zone.addEventListener('drop', function (e) {
+        if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; show(input.files[0]); }
+    });
+    form.addEventListener('submit', function (e) {
+        if (!input.files.length) { e.preventDefault(); name.textContent = 'Please choose an image first.'; return; }
+        // hand a small preview to the result page (browser only; the server never stores the picture)
+        try {
+            var w = prev.naturalWidth, h = prev.naturalHeight; if (!w || !h) throw 0; var s = Math.min(1, 800 / Math.max(w, h)), c = document.createElement('canvas');
+            c.width = Math.round(w * s); c.height = Math.round(h * s);
+            c.getContext('2d').drawImage(prev, 0, 0, c.width, c.height);
+            sessionStorage.setItem('ds_preview', c.toDataURL('image/jpeg', 0.85));
+        } catch (err) { try { sessionStorage.removeItem('ds_preview'); } catch (e2) {} }
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analyzing...';
+    });
+})();
+</script>
+{% endblock %}

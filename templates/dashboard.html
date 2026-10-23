@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block meta_description %}Your DeepShield account home page.{% endblock %}
+
+{% block content %}
+<div class="container ds-page-container">
+
+    {# ==================== WELCOME BANNER ==================== #}
+    <div class="ds-dashboard-welcome ds-reveal">
+        <div class="row align-items-center">
+            <div class="col">
+                <p style="color: var(--accent); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">
+                    <i class="bi bi-shield-fill-check me-1"></i>DeepShield Forensics
+                </p>
+                <h1 class="ds-page-title mb-0">
+                    Welcome back, <span style="background: var(--gradient-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">{{ user.username }}</span>
+                </h1>
+                <p class="mt-1 mb-0" style="color: var(--text-secondary); font-size: 0.9rem;">
+                    Your account overview
+                </p>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'logout' %}" class="btn ds-btn-outline">
+                    <i class="bi bi-box-arrow-right"></i>Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {# ==================== ACCOUNT CARDS ==================== #}
+    <div class="row g-4 mb-4">
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="ds-stat-card ds-reveal">
+                <div class="ds-stat-icon ds-stat-icon-primary"><i class="bi bi-person"></i></div>
+                <div class="ds-stat-content">
+                    <div class="ds-stat-number" style="font-size: 1.3rem;">{{ user.username }}</div>
+                    <div class="ds-stat-label">Username</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="ds-stat-card ds-reveal">
+                <div class="ds-stat-icon ds-stat-icon-cyan"><i class="bi bi-envelope"></i></div>
+                <div class="ds-stat-content">
+                    <div class="ds-stat-number" style="font-size: 1.05rem; word-break: break-all;">{{ user.email }}</div>
+                    <div class="ds-stat-label">Email</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="ds-stat-card ds-reveal">
+                <div class="ds-stat-icon ds-stat-icon-success"><i class="bi bi-calendar-check"></i></div>
+                <div class="ds-stat-content">
+                    <div class="ds-stat-number" style="font-size: 1.3rem;">{{ user.date_joined|date:"d M Y" }}</div>
+                    <div class="ds-stat-label">Member since</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-lg-3">
+            <div class="ds-stat-card ds-reveal">
+                <div class="ds-stat-icon ds-stat-icon-danger"><i class="bi bi-clock-history"></i></div>
+                <div class="ds-stat-content">
+                    <div class="ds-stat-number" style="font-size: 1.3rem;">{{ user.last_login|date:"d M, H:i" }}</div>
+                    <div class="ds-stat-label">Last login</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {# ==================== UPLOAD CARD ==================== #}
+    <div class="ds-card ds-reveal">
+        <div class="ds-card-body">
+            <h2 class="ds-section-title mb-2">Check an image</h2>
+            <p style="color: var(--text-secondary);">Upload a photo to see how the analysis screen works.</p>
+            <a href="{% url 'analyze' %}" class="btn ds-btn-primary"><i class="bi bi-cloud-upload"></i> Upload image</a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

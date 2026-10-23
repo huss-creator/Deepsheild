@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+{% block meta_description %}Create a free DeepShield account to start analysing images for deepfake detection with 6 AI models.{% endblock %}
+
+{% block content %}
+<div class="ds-auth-container">
+
+    {# Decorative rotating cyberpunk face — purely visual, sits behind the form #}
+    <div class="ds-face-hologram" aria-hidden="true">
+        <svg class="ds-face-ring" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="92" fill="none" stroke="#06B6D4" stroke-width="1" stroke-dasharray="2 6" opacity="0.6"/>
+            <circle cx="100" cy="100" r="78" fill="none" stroke="#6366F1" stroke-width="1" stroke-dasharray="10 4" opacity="0.4"/>
+        </svg>
+        <svg class="ds-face-mesh" viewBox="0 0 300 340" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="dsGlowRegister" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2.4" result="blur"/>
+                    <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            <g fill="none" stroke="#7dd3fc" stroke-width="1.1" filter="url(#dsGlowRegister)" opacity="0.85">
+                <path d="M150,20 C90,20 55,70 55,140 C55,200 75,240 95,270 C110,295 130,315 150,320 C170,315 190,295 205,270 C225,240 245,200 245,140 C245,70 210,20 150,20 Z"/>
+                <path d="M150,20 L110,150 M150,20 L190,150"/>
+                <path d="M55,140 L110,150 M55,140 L95,270"/>
+                <path d="M245,140 L190,150 M245,140 L205,270"/>
+                <path d="M95,80 L205,80 M95,80 L55,140 M205,80 L245,140"/>
+                <path d="M110,150 L150,150 M190,150 L150,150"/>
+                <path d="M150,150 L150,205"/>
+                <path d="M140,205 L150,150 L160,205"/>
+                <path d="M150,205 L120,235 M150,205 L180,235"/>
+                <path d="M120,235 C135,248 165,248 180,235"/>
+                <path d="M95,270 L150,320 M205,270 L150,320"/>
+                <ellipse cx="110" cy="150" rx="16" ry="9"/>
+                <ellipse cx="190" cy="150" rx="16" ry="9"/>
+            </g>
+            <g fill="#22d3ee" opacity="0.9">
+                <circle cx="150" cy="20" r="2.6"/><circle cx="55" cy="140" r="2.6"/><circle cx="245" cy="140" r="2.6"/>
+                <circle cx="95" cy="80" r="2.2"/><circle cx="205" cy="80" r="2.2"/>
+                <circle cx="110" cy="150" r="2.6"/><circle cx="190" cy="150" r="2.6"/>
+                <circle cx="150" cy="150" r="2.2"/><circle cx="150" cy="205" r="2.2"/>
+                <circle cx="120" cy="235" r="2.2"/><circle cx="180" cy="235" r="2.2"/>
+                <circle cx="95" cy="270" r="2.6"/><circle cx="205" cy="270" r="2.6"/><circle cx="150" cy="320" r="2.6"/>
+            </g>
+        </svg>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center align-items-start" style="min-height: 80vh; padding: 2rem 0;">
+
+            {# Left branding panel — hidden on mobile #}
+            <div class="col-lg-5 d-none d-lg-block pe-5 pt-4">
+                <div style="animation: slideUp 0.4s ease;">
+
+                    {# Logo #}
+                    <div class="mb-4" style="font-size: 1.6rem; font-weight: 800; background: var(--gradient-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">
+                        <i class="bi bi-shield-fill-check me-2" style="-webkit-text-fill-color: transparent; background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text;"></i>
+                        DeepShield
+                    </div>
+
+                    <h2 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 1rem;">
+                        Start Your Forensic<br>
+                        <span style="background: var(--gradient-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Analysis Journey</span>
+                    </h2>
+
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.75; max-width: 340px;">
+                        Create a free account and get instant access to our AI-powered deepfake detection system with full forensic reporting.
+                    </p>
+
+                    <ul class="ds-auth-feature-list mt-4">
+                        <li><i class="bi bi-check-circle-fill"></i> Free access to 6 AI detection models</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Unlimited image analysis &amp; history</li>
+                        <li><i class="bi bi-check-circle-fill"></i> SHA-256 cryptographic fingerprinting</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Grad-CAM explainability for AI decisions</li>
+                    </ul>
+
+                </div>
+            </div>
+
+            {# Right: Registration card #}
+            <div class="col-lg-5 col-md-7 col-sm-10">
+                <div class="ds-auth-card">
+                    <div class="ds-corner-tl"></div>
+                    <div class="ds-corner-br"></div>
+
+                    {# Header #}
+                    <div class="ds-auth-header">
+                        <i class="bi bi-person-plus-fill ds-auth-icon"></i>
+                        <h1 class="ds-auth-title">Create Account</h1>
+                        <p class="ds-auth-subtitle">Join DeepShield — it's free</p>
+                    </div>
+
+                    {# Little terminal readout — purely decorative, CSS-only typewriter #}
+                    <div class="ds-terminal" aria-hidden="true">
+                        <span class="ds-terminal-line">&gt; initializing new identity record...</span>
+                        <span class="ds-terminal-line">&gt; password will be hashed on submit_</span>
+                    </div>
+
+                    {# Registration Form — csrf_token required for Django CSRF protection #}
+                    <form method="POST" action="{% url 'register' %}" id="registerForm" novalidate>
+                        {% csrf_token %}
+
+                        {# Username #}
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label ds-label">
+                                <i class="bi bi-person"></i> Username
+                            </label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="ds-field-error">
+                                    {% for error in form.username.errors %}
+                                        <i class="bi bi-exclamation-circle"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {# Email #}
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label ds-label">
+                                <i class="bi bi-envelope"></i> Email Address
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="ds-field-error">
+                                    {% for error in form.email.errors %}
+                                        <i class="bi bi-exclamation-circle"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {# Password with strength indicator #}
+                        <div class="mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label ds-label">
+                                <i class="bi bi-lock"></i> Password
+                            </label>
+                            <div class="ds-input-group">
+                                {{ form.password1 }}
+                                <button class="ds-eye-toggle" id="pw1EyeBtn"
+                                        type="button" aria-label="Toggle password visibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+
+                            {% if form.password1.errors %}
+                                <div class="ds-field-error">
+                                    {% for error in form.password1.errors %}
+                                        <i class="bi bi-exclamation-circle"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            {# Live strength bar #}
+                            <div class="ds-strength-bar mt-2">
+                                <div class="ds-strength-fill" id="strengthBar"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="ds-strength-label" id="strengthLabel"></span>
+                            </div>
+
+                            {# Requirements checklist — updated live by JS #}
+                            <ul class="ds-pw-reqs mt-2" id="pwReqs">
+                                <li class="ds-pw-req" data-req="length">
+                                    <i class="bi bi-circle"></i> 8+ characters
+                                </li>
+                                <li class="ds-pw-req" data-req="uppercase">
+                                    <i class="bi bi-circle"></i> Uppercase letter
+                                </li>
+                                <li class="ds-pw-req" data-req="lowercase">
+                                    <i class="bi bi-circle"></i> Lowercase letter
+                                </li>
+                                <li class="ds-pw-req" data-req="number">
+                                    <i class="bi bi-circle"></i> Number
+                                </li>
+                                <li class="ds-pw-req" data-req="special">
+                                    <i class="bi bi-circle"></i> Special character
+                                </li>
+                            </ul>
+                        </div>
+
+                        {# Confirm Password #}
+                        <div class="mb-4">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label ds-label">
+                                <i class="bi bi-lock-fill"></i> Confirm Password
+                            </label>
+                            <div class="ds-input-group">
+                                {{ form.password2 }}
+                                <button class="ds-eye-toggle" id="pw2EyeBtn"
+                                        type="button" aria-label="Toggle confirm password visibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password2.errors %}
+                                <div class="ds-field-error">
+                                    {% for error in form.password2.errors %}
+                                        <i class="bi bi-exclamation-circle"></i>{{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {# Non-field errors e.g. password mismatch #}
+                        {% if form.non_field_errors %}
+                        <div class="ds-field-error mb-3" style="font-size: 0.875rem; padding: 0.75rem; background: var(--danger-dim); border-radius: var(--radius-sm); border: 1px solid rgba(239,68,68,0.2);">
+                            {% for error in form.non_field_errors %}
+                                <i class="bi bi-exclamation-triangle me-1"></i>{{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {# Submit #}
+                        <button type="submit" class="btn ds-btn-primary w-100 btn-lg" id="registerSubmitBtn">
+                            <i class="bi bi-person-check"></i> Create Account
+                        </button>
+
+                    </form>
+
+                    <div class="ds-auth-trust">
+                        <i class="bi bi-shield-lock-fill"></i> Your password is hashed — never stored as plain text
+                    </div>
+
+                    <div class="ds-auth-footer">
+                        Already have an account?
+                        <a href="{% url 'login' %}" class="ds-auth-link">Sign in instead</a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ============================================================
+// Register page JavaScript
+// 1. Eye toggles for both password fields
+// 2. Live password strength checker
+// 3. Loading state on submit
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // 1. Eye toggles
+    DS.initEyeToggle('{{ form.password1.id_for_label }}', document.getElementById('pw1EyeBtn'));
+    DS.initEyeToggle('{{ form.password2.id_for_label }}', document.getElementById('pw2EyeBtn'));
+
+    // 2. Password strength — uses DS.initStrengthChecker from main.js
+    DS.initStrengthChecker(
+        '{{ form.password1.id_for_label }}',   // Password input ID (from Django form)
+        'strengthBar',                           // Strength bar fill element ID
+        'strengthLabel',                         // Strength label text element ID
+        'pwReqs'                                 // Requirements list element ID
+    );
+
+    // 3. Loading state on submit
+    var form      = document.getElementById('registerForm');
+    var submitBtn = document.getElementById('registerSubmitBtn');
+
+    form.addEventListener('submit', function () {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2" role="status"></span>' +
+            'Creating account...';
+    });
+
+});
+</script>
+{% endblock %}
