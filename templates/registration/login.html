@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+{% block meta_description %}Login to your DeepShield account to start analysing images for deepfake detection.{% endblock %}
+
+{% block content %}
+<div class="ds-auth-container">
+
+    {# Decorative rotating cyberpunk face — purely visual, sits behind the form #}
+    <div class="ds-face-hologram" aria-hidden="true">
+        <svg class="ds-face-ring" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="92" fill="none" stroke="#06B6D4" stroke-width="1" stroke-dasharray="2 6" opacity="0.6"/>
+            <circle cx="100" cy="100" r="78" fill="none" stroke="#6366F1" stroke-width="1" stroke-dasharray="10 4" opacity="0.4"/>
+        </svg>
+        <svg class="ds-face-mesh" viewBox="0 0 300 340" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="dsGlowLogin" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2.4" result="blur"/>
+                    <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            <g fill="none" stroke="#7dd3fc" stroke-width="1.1" filter="url(#dsGlowLogin)" opacity="0.85">
+                <path d="M150,20 C90,20 55,70 55,140 C55,200 75,240 95,270 C110,295 130,315 150,320 C170,315 190,295 205,270 C225,240 245,200 245,140 C245,70 210,20 150,20 Z"/>
+                <path d="M150,20 L110,150 M150,20 L190,150"/>
+                <path d="M55,140 L110,150 M55,140 L95,270"/>
+                <path d="M245,140 L190,150 M245,140 L205,270"/>
+                <path d="M95,80 L205,80 M95,80 L55,140 M205,80 L245,140"/>
+                <path d="M110,150 L150,150 M190,150 L150,150"/>
+                <path d="M150,150 L150,205"/>
+                <path d="M140,205 L150,150 L160,205"/>
+                <path d="M150,205 L120,235 M150,205 L180,235"/>
+                <path d="M120,235 C135,248 165,248 180,235"/>
+                <path d="M95,270 L150,320 M205,270 L150,320"/>
+                <ellipse cx="110" cy="150" rx="16" ry="9"/>
+                <ellipse cx="190" cy="150" rx="16" ry="9"/>
+            </g>
+            <g fill="#22d3ee" opacity="0.9">
+                <circle cx="150" cy="20" r="2.6"/><circle cx="55" cy="140" r="2.6"/><circle cx="245" cy="140" r="2.6"/>
+                <circle cx="95" cy="80" r="2.2"/><circle cx="205" cy="80" r="2.2"/>
+                <circle cx="110" cy="150" r="2.6"/><circle cx="190" cy="150" r="2.6"/>
+                <circle cx="150" cy="150" r="2.2"/><circle cx="150" cy="205" r="2.2"/>
+                <circle cx="120" cy="235" r="2.2"/><circle cx="180" cy="235" r="2.2"/>
+                <circle cx="95" cy="270" r="2.6"/><circle cx="205" cy="270" r="2.6"/><circle cx="150" cy="320" r="2.6"/>
+            </g>
+        </svg>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+
+            {# Left branding panel — hidden on mobile #}
+            <div class="col-lg-5 d-none d-lg-block pe-5">
+                <div style="animation: slideUp 0.4s ease;">
+
+                    {# Logo #}
+                    <div class="mb-4" style="font-size: 1.6rem; font-weight: 800; background: var(--gradient-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">
+                        <i class="bi bi-shield-fill-check me-2" style="-webkit-text-fill-color: transparent; background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text;"></i>
+                        DeepShield
+                    </div>
+
+                    <h2 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 1rem;">
+                        Welcome back to<br>
+                        <span style="background: var(--gradient-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">AI Forensics</span>
+                    </h2>
+
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.75; max-width: 340px;">
+                        Log in to access your personal dashboard, run deepfake detection, and review your forensic analysis history.
+                    </p>
+
+                    {# Feature list #}
+                    <ul class="ds-auth-feature-list mt-4">
+                        <li><i class="bi bi-check-circle-fill"></i> 6 AI models for ensemble detection</li>
+                        <li><i class="bi bi-check-circle-fill"></i> SHA-256 image integrity verification</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Full analysis history &amp; forensic reports</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Grad-CAM explainability heatmaps</li>
+                    </ul>
+                </div>
+            </div>
+
+            {# Right: Login card #}
+            <div class="col-lg-5 col-md-7 col-sm-10">
+                <div class="ds-auth-card">
+                    <div class="ds-corner-tl"></div>
+                    <div class="ds-corner-br"></div>
+
+                    {# Header #}
+                    <div class="ds-auth-header">
+                        <i class="bi bi-shield-lock-fill ds-auth-icon"></i>
+                        <h1 class="ds-auth-title">Welcome Back</h1>
+                        <p class="ds-auth-subtitle">Sign in to your DeepShield account</p>
+                    </div>
+
+                    {# Little terminal readout — purely decorative, CSS-only typewriter #}
+                    <div class="ds-terminal" aria-hidden="true">
+                        <span class="ds-terminal-line">&gt; establishing secure session...</span>
+                        <span class="ds-terminal-line">&gt; AES-256 / CSRF token verified_</span>
+                    </div>
+
+                    {# Login Form — method and action unchanged #}
+                    <form method="POST" action="{% url 'login' %}" id="loginForm" novalidate>
+                        {% csrf_token %}
+
+                        {# Username field #}
+                        <div class="mb-4">
+                            <label for="username" class="form-label ds-label">
+                                <i class="bi bi-person"></i> Username
+                            </label>
+                            <input type="text"
+                                   id="username"
+                                   name="username"
+                                   class="form-control"
+                                   placeholder="Enter your username"
+                                   required
+                                   autocomplete="username">
+                        </div>
+
+                        {# Password field with eye toggle #}
+                        <div class="mb-4">
+                            <label for="loginPassword" class="form-label ds-label">
+                                <i class="bi bi-lock"></i> Password
+                            </label>
+                            <div class="ds-input-group">
+                                <input type="password"
+                                       id="loginPassword"
+                                       name="password"
+                                       class="form-control"
+                                       placeholder="Enter your password"
+                                       required
+                                       autocomplete="current-password">
+                                {# Eye icon — JS toggles password visibility #}
+                                <button class="ds-eye-toggle" id="loginEyeBtn"
+                                        type="button" aria-label="Toggle password visibility">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        {# Submit button #}
+                        <button type="submit" class="btn ds-btn-primary w-100 btn-lg" id="loginSubmitBtn">
+                            <i class="bi bi-box-arrow-in-right"></i> Sign In
+                        </button>
+                    </form>
+
+                    <div class="ds-auth-trust">
+                        <i class="bi bi-shield-lock-fill"></i> Secured with CSRF protection &amp; hashed passwords
+                    </div>
+
+                    {# Link to register #}
+                    <div class="ds-auth-footer">
+                        Don't have an account?
+                        <a href="{% url 'register' %}" class="ds-auth-link">Create one free</a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ============================================================
+// Login page JavaScript
+// 1. Password eye toggle
+// 2. Loading state on submit
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // 1. Eye toggle — uses DS.initEyeToggle from main.js
+    DS.initEyeToggle('loginPassword', document.getElementById('loginEyeBtn'));
+
+    // 2. Loading state when form is submitted
+    var form      = document.getElementById('loginForm');
+    var submitBtn = document.getElementById('loginSubmitBtn');
+
+    form.addEventListener('submit', function () {
+        // Show spinner on the button while the page loads
+        submitBtn.disabled = true;
+        submitBtn.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2" role="status"></span>' +
+            'Signing in...';
+    });
+
+});
+</script>
+{% endblock %}
