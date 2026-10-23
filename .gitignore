@@ -1,0 +1,54 @@
+# DeepShield .gitignore
+# These files and folders should NOT be committed to GitHub
+
+# Python virtual environment
+venv/
+env/
+.venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Django database (SQLite)
+db.sqlite3
+
+# Django collected static files
+staticfiles/
+
+# Media files (user uploads — these are private)
+media/
+
+# Environment variables file (contains secrets!)
+.env
+
+# VS Code settings
+.vscode/
+
+# PyCharm settings
+.idea/
+
+# Trained model files (too large for GitHub — use Git LFS or share separately)
+trained_models/**/*.h5
+trained_models/**/*.pt
+trained_models/**/*.keras
+trained_models/**/*.pth
+trained_models/**/*.onnx
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Log files
+*.log
