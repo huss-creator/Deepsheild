@@ -1,1 +1,24 @@
-Django>=4.2,<5.0
+# DeepShield: install with `pip install -r requirements.txt` (Python 3.11 or 3.12 recommended)
+Django>=5.2,<5.3
+djangorestframework>=3.15
+djangorestframework-simplejwt>=5.3
+drf-spectacular>=0.27
+django-cors-headers>=4.3
+celery>=5.4
+redis>=5.0
+python-dotenv>=1.0
+numpy>=2.0
+Pillow>=10.4
+opencv-python-headless>=4.10
+scipy>=1.13
+scikit-learn>=1.5
+joblib>=1.4
+onnxruntime>=1.19
+onnx>=1.16
+prometheus-client>=0.20
+argon2-cffi>=23.1
+
+# Optional: Grad-CAM heat-maps and PyTorch models (install the build that matches your machine)
+#   pip install torch torchvision timm onnx2torch
+# Optional: real C2PA verification
+#   pip install c2pa-python

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}System Limitations &amp; Boundary Conditions — DeepShield{% endblock %}
+
+
+{% block content %}
+<div class="container py-5">
+    {# Header #}
+    <div class="row justify-content-center text-center mb-5">
+        <div class="col-lg-9">
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); color: #fbbf24; font-size: 0.85rem; font-weight: 600;">
+                <i class="bi bi-cone-striped"></i> BOUNDARY CONDITIONS &amp; CONSTRAINTS
+            </div>
+            <h1 class="display-5 fw-bold text-white mb-3">System Limitations</h1>
+            <p class="lead text-light opacity-75">
+                Scientific credibility requires clear boundaries. DeepShield is optimized for digital facial still images. Below is an exhaustive list of operational constraints where analytical efficacy may be reduced.
+            </p>
+        </div>
+    </div>
+
+    {# Limitations Grid #}
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="p-4 rounded-4 h-100" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                <h2 class="h5 fw-bold text-white mb-2">1. Social Media Re-Compression</h2>
+                <p class="text-light opacity-75 small mb-0">
+                    When an image is shared across messaging apps (WhatsApp, WeChat) or social networks, lossy compression algorithms discard high-frequency DCT coefficients and destroy sensor PRNU noise. Under extreme re-compression (JPEG quality &lt; 50), forensic residual indicators may become unavailable.
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="p-4 rounded-4 h-100" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                <h2 class="h5 fw-bold text-white mb-2">2. Single-Frame vs. Temporal Dynamics</h2>
+                <p class="text-light opacity-75 small mb-0">
+                    DeepShield evaluates individual still image frames. Video-level anomalies — such as unnatural blink rates, pulse variations (rPPG), and temporal jitter across frames — are not captured in a static analysis and require temporal video architectures.
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="p-4 rounded-4 h-100" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                <h2 class="h5 fw-bold text-white mb-2">3. Low-Resolution &amp; Extreme Angles</h2>
+                <p class="text-light opacity-75 small mb-0">
+                    Faces smaller than 64×64 pixels or rotated at extreme angles (&gt; 45° pitch/yaw) yield insufficient pixel density for CNN receptive fields. DeepShield explicitly flags such faces as <code>POOR_QUALITY</code> and marks the ensemble outcome as <code>UNCERTAIN</code>.
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="p-4 rounded-4 h-100" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                <h2 class="h5 fw-bold text-white mb-2">4. Adversarial Perturbations</h2>
+                <p class="text-light opacity-75 small mb-0">
+                    Adversarial attacks specifically engineered to mislead neural gradient descents can introduce subtle pixel noise that flips CNN predictions without changing visual appearance. DeepShield mitigates this by pairing neural backbones with independent classical forensic filters.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {# Summary Alert #}
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-10">
+            <div class="p-4 rounded-4" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(245, 158, 11, 0.2);">
+                <h3 class="h6 fw-bold text-warning mb-2"><i class="bi bi-shield-check me-1"></i> How DeepShield Responds to Limitations</h3>
+                <p class="text-light opacity-75 small mb-0">
+                    Instead of guessing or presenting inflated confidence scores when boundary conditions are reached, DeepShield triggers transparent uncertainty reasons: <code>poor_face_quality</code>, <code>insufficient_models</code>, <code>score_in_uncertainty_band</code>, or <code>model_disagreement</code>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row text-center">
+        <div class="col-12">
+            <a href="{% url 'upload' %}" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold me-2">
+                <i class="bi bi-scan me-1"></i> Analyze an Image
+            </a>
+            <a href="{% url 'home' %}#how-it-works" class="btn btn-outline-light px-4 py-2 rounded-pill fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i> Back to How It Works
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

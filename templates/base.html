@@ -1,86 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
+{% load static %}<!DOCTYPE html>
+<html lang="en"{% if not user.is_authenticated %} data-theme="dark" data-bs-theme="dark" data-lock-theme="dark"{% endif %}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>{% block title %}DeepShield{% endblock %} | Auth Demo</title>
+    <title>{% block title %}DeepShield{% endblock %} | AI Deepfake Detection</title>
+    <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#05070A">
 
+{# Bootstrap 5 CSS — grid, utilities, and components #}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    {# Bootstrap Icons #}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    {# Google Fonts — Inter for body text, Orbitron + Share Tech Mono for the HUD look #}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {# DeepShield premium theme CSS #}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261103">
+    <script nonce="{{ csp_nonce }}" src="{% static 'js/theme.js' %}?v=20261103"></script>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath fill=%27%236366F1%27 d=%27M8 0l6 2v5c0 4-3 7-6 9-3-2-6-5-6-9V2z%27/%3E%3C/svg%3E">
 
-    {% block extra_head %}{% endblock %}
+        {% block extra_head %}{% endblock %}
 </head>
 <body>
 
     {# ==================== NAVIGATION BAR ==================== #}
     <nav class="navbar navbar-expand-lg ds-navbar" aria-label="Main navigation">
         <div class="container">
-
-            <a class="navbar-brand ds-brand" href="{% url 'home' %}" aria-label="DeepShield home">
+            <a class="navbar-brand ds-brand" href="{% if user.is_authenticated %}{% url 'upload' %}{% else %}{% url 'home' %}{% endif %}" aria-label="DeepShield home">
                 <i class="bi bi-shield-fill-check ds-brand-icon"></i>
                 <span>Deep<strong>Shield</strong></span>
             </a>
 
-            <button class="navbar-toggler" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false"
-                    aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="d-flex align-items-center gap-2 ms-auto order-lg-2">
+                {% if user.is_authenticated %}<button type="button" id="themeToggle" class="ds-theme-toggle" aria-label="Switch theme"><i class="bi bi-sun"></i></button>{% endif %}
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="collapse navbar-collapse order-lg-1" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center gap-1">
-
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
-                           href="{% url 'home' %}">
-                            <i class="bi bi-house me-1"></i>Home
-                        </a>
-                    </li>
-
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-                               href="{% url 'dashboard' %}">
-                                <i class="bi bi-speedometer2 me-1"></i>Dashboard
-                            </a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'upload' %}active{% endif %}" href="{% url 'upload' %}"><i class="bi bi-scan me-1"></i>Analyse</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'analyze' %}active{% endif %}"
-                               href="{% url 'analyze' %}">
-                                <i class="bi bi-cloud-upload me-1"></i>Analyze
-                            </a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}" href="{% url 'history' %}"><i class="bi bi-clock-history me-1"></i>History</a>
                         </li>
                         <li class="nav-item ms-lg-2 d-flex align-items-center gap-2">
-                            <div class="ds-nav-avatar" title="{{ user.username }}" aria-label="Logged in as {{ user.username }}">
-                                {{ user.username|first|upper }}
-                            </div>
-                            <a class="ds-btn-logout" href="{% url 'logout' %}">
-                                <i class="bi bi-box-arrow-right"></i>
-                                <span class="d-none d-md-inline">Logout</span>
+                            <a href="{% url 'account' %}" class="text-decoration-none" title="Account &amp; data">
+                                <div class="ds-nav-avatar" aria-label="Account settings for {{ user.username }}">{{ user.username|first|upper }}</div>
                             </a>
+                            <form method="post" action="{% url 'logout' %}" class="d-inline m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="ds-btn-logout"><i class="bi bi-box-arrow-right"></i><span class="d-none d-md-inline">Logout</span></button>
+                            </form>
                         </li>
                     {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}"
-                               href="{% url 'login' %}">
-                                <i class="bi bi-box-arrow-in-right me-1"></i>Login
-                            </a>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#models">Models</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#algorithms">Algorithms</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#how-it-works">How it works</a></li>
+                        <li class="nav-item ms-lg-2">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
                         </li>
                         <li class="nav-item ms-lg-1">
-                            <a class="ds-btn-register" href="{% url 'register' %}">
-                                <i class="bi bi-person-plus"></i>
-                                <span>Get Started</span>
-                            </a>
+                            <a class="ds-btn-register" href="{% url 'register' %}"><i class="bi bi-person-plus"></i><span>Get Started</span></a>
                         </li>
                     {% endif %}
-
                 </ul>
             </div>
         </div>
@@ -105,29 +94,35 @@
 
     {# ==================== MAIN CONTENT ==================== #}
     <main class="ds-main" id="main-content">
-        {% block content %}{% endblock %}
+        {% block content %}
+        {% endblock %}
     </main>
 
     {# ==================== FOOTER ==================== #}
-    <footer class="ds-footer" role="contentinfo">
-        <div class="container text-center">
-            <p class="mb-1">
-                <i class="bi bi-shield-fill-check me-1 text-primary"></i>
-                <strong>DeepShield</strong>
-                <span class="text-muted"> — Login &amp; Registration Module</span>
-            </p>
-            <p class="text-muted small mb-0">
-                Final Year Project &bull; BSCS &bull; Built with Django &amp; Python
+    <footer class="ds-footer py-4 mt-5" role="contentinfo">
+        <div class="container">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-fill-check text-primary fs-5"></i>
+                    <span class="fw-bold">Deep<strong>Shield</strong></span>
+                    <span class="text-muted small ms-2">Final Year Project &bull; BS Computer Science &bull; 2026</span>
+                </div>
+                <div class="small d-flex gap-3">
+                    <a href="{% url 'privacy' %}" class="text-secondary text-decoration-none">Privacy</a>
+                    <a href="{% url 'limitations' %}" class="text-secondary text-decoration-none">Limitations</a>
+                </div>
+            </div>
+            <p class="text-muted small text-center mt-3 mb-0">
+                <i class="bi bi-info-circle me-1"></i>Results are probabilistic AI/forensic indicators, not proof of authenticity. Human review is recommended.
             </p>
         </div>
     </footer>
 
     <div id="ds-toast-container" aria-live="assertive" aria-atomic="true"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/main.js' %}"></script>
-    <script src="{% static 'js/cyber.js' %}"></script>
-
+    <script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script nonce="{{ csp_nonce }}" src="{% static 'js/main.js' %}?v=20261103"></script>
+    <script nonce="{{ csp_nonce }}" src="{% static 'js/cyber.js' %}"></script>
     {% block extra_scripts %}{% endblock %}
 
 </body>

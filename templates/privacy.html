@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Privacy Notice{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 820px;">
+    <h1 class="ds-page-title">Privacy Notice</h1>
+    <p class="text-muted small">This is a plain-language description of what this DeepShield deployment actually does. The operator should review it against local law before public use.</p>
+
+    <h2 class="h5 mt-4">What we collect</h2>
+    <ul>
+        <li><strong>Account:</strong> username, e-mail address, and a salted password hash (never your password).</li>
+        <li><strong>Images you upload</strong> (JPEG/PNG, up to {{ max_mb }} MB) and files derived from them: face crops, explanation heat-maps and forensic maps.</li>
+        <li><strong>Analysis results:</strong> model scores, forensic indicators, a SHA-256 fingerprint of your image and a signed report.</li>
+        <li><strong>Security log:</strong> sign-ins, uploads, deletions and access denials with time and IP address (no image content), kept for {{ audit_days }} days.</li>
+    </ul>
+
+    <h2 class="h5 mt-4">How images are used</h2>
+    <ul>
+        <li>Only to produce your analysis. Images are <strong>not</strong> used to train or tune models and are not shared with third parties.</li>
+        <li>Images are private to your account. Every image request is checked against your account; stored files are not publicly addressable.</li>
+        <li>Faces are processed only to detect, crop and analyse them. No identification or face matching is performed.</li>
+        <li>EXIF/GPS metadata is read as one forensic indicator and is shown only to you.</li>
+    </ul>
+
+    <h2 class="h5 mt-4">How long we keep it</h2>
+    <p>
+        {% if retention_days %}Analyses and their images are <strong>automatically deleted {{ retention_days }} days</strong> after upload.
+        {% else %}Analyses and images are kept until you delete them.{% endif %}
+        You can delete any analysis at any time from its result page, and delete your whole account (with all images and results) from
+        <a href="{% url 'account' %}">Account &amp; data</a>. Deletion removes the stored files, not just database rows.
+        Backups made by the operator may retain data for a limited period before they expire.
+    </p>
+
+    <h2 class="h5 mt-4">Please only upload images you may analyse</h2>
+    <p>Do not upload images of people without a legitimate reason. Analysis results are probabilistic estimates, not legal proof, and should not be used on their own to accuse anyone.</p>
+
+    <h2 class="h5 mt-4">Contact</h2>
+    <p>Requests about your data: contact the operator of this deployment (the address in the site footer or your administrator).</p>
+</div>
+{% endblock %}

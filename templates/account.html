@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Account &amp; data{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 760px;">
+    <h1 class="ds-page-title">Account &amp; data</h1>
+    <div class="ds-card mb-4"><div class="p-3">
+        <p class="mb-1"><strong>{{ user.username }}</strong> &middot; {{ user.email }}</p>
+        <p class="mb-0 text-muted small">
+            You have {{ analysis_count }} stored analys{{ analysis_count|pluralize:"is,es" }}.
+            {% if retention_days %}They are deleted automatically {{ retention_days }} days after upload.{% else %}They are kept until you delete them.{% endif %}
+            See the <a href="{% url 'privacy' %}">Privacy Notice</a>.
+        </p>
+    </div></div>
+
+    <div class="ds-card" style="border-color: var(--danger, #dc3545);"><div class="p-3">
+        <h2 class="h5 text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Delete my account and all data</h2>
+        <p class="small">This permanently deletes your account, every uploaded image, face crop, heat-map, forensic map and report. It cannot be undone.</p>
+        <form method="post" action="{% url 'delete_account' %}" id="deleteAccountForm">
+            {% csrf_token %}
+            <div class="mb-2"><label class="form-label small" for="pw">Password</label>
+                <input class="form-control" type="password" name="password" id="pw" autocomplete="current-password" required></div>
+            <div class="mb-3"><label class="form-label small" for="cf">Type DELETE to confirm</label>
+                <input class="form-control" type="text" name="confirm" id="cf" autocomplete="off" required></div>
+            <button class="btn ds-btn-danger" type="submit"><i class="bi bi-trash me-1"></i>Delete everything</button>
+        </form>
+    </div></div>
+</div>
+{% endblock %}
