@@ -1,0 +1,255 @@
+{% comment %}
+Shared partial: _evidence_bars.html
+Usage: {% include 'detector/_evidence_bars.html' with forensic=forensic %}
+Shows animated evidence strength bars for all 5 categories.
+{% endcomment %}
+
+<div class="ds-evidence-bars">
+
+    {# AI Model Evidence #}
+    <div class="ds-evidence-row">
+        <div class="ds-evidence-label-group">
+            <span class="ds-evidence-label"><i class="bi bi-cpu me-1"></i>AI Model Evidence</span>
+            <span class="ds-evidence-score">{{ forensic.evidence_ai|floatformat:0 }}</span>
+        </div>
+        <div class="progress ds-evidence-progress">
+            <div class="progress-bar ds-evidence-bar
+                {% if forensic.evidence_ai >= 65 %}bg-danger
+                {% elif forensic.evidence_ai >= 35 %}bg-warning
+                {% else %}bg-success{% endif %}"
+                role="progressbar"
+                style="width: 0%"
+                data-target-width="{{ forensic.evidence_ai|floatformat:0 }}%"
+                aria-valuenow="{{ forensic.evidence_ai|floatformat:0 }}"
+                aria-valuemin="0" aria-valuemax="100">
+            </div>
+        </div>
+    </div>
+
+    {# ELA Evidence #}
+    <div class="ds-evidence-row">
+        <div class="ds-evidence-label-group">
+            <span class="ds-evidence-label"><i class="bi bi-layers me-1"></i>ELA Evidence</span>
+            <span class="ds-evidence-score">
+                {% if forensic.ela_level == 'UNAVAILABLE' %}
+                    N/A
+                {% else %}
+                    {{ forensic.evidence_ela|floatformat:0 }}
+                {% endif %}
+            </span>
+        </div>
+        <div class="progress ds-evidence-progress">
+            {% if forensic.ela_level != 'UNAVAILABLE' %}
+            <div class="progress-bar ds-evidence-bar
+                {% if forensic.evidence_ela >= 65 %}bg-danger
+                {% elif forensic.evidence_ela >= 35 %}bg-warning
+                {% else %}bg-success{% endif %}"
+                role="progressbar"
+                style="width: 0%"
+                data-target-width="{{ forensic.evidence_ela|floatformat:0 }}%">
+            </div>
+            {% else %}
+            <div class="progress-bar bg-secondary" style="width: 100%; opacity: 0.15;"></div>
+            {% endif %}
+        </div>
+        {% if forensic.ela_level == 'UNAVAILABLE' %}<small style="color: var(--text-muted); font-size: 0.7rem;">ELA analysis unavailable</small>{% endif %}
+    </div>
+
+    {# Frequency Evidence #}
+    <div class="ds-evidence-row">
+        <div class="ds-evidence-label-group">
+            <span class="ds-evidence-label"><i class="bi bi-activity me-1"></i>Frequency Evidence</span>
+            <span class="ds-evidence-score">
+                {% if forensic.freq_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_freq|floatformat:0 }}{% endif %}
+            </span>
+        </div>
+        <div class="progress ds-evidence-progress">
+            {% if forensic.freq_level != 'UNAVAILABLE' %}
+            <div class="progress-bar ds-evidence-bar
+                {% if forensic.evidence_freq >= 65 %}bg-danger
+                {% elif forensic.evidence_freq >= 35 %}bg-warning
+                {% else %}bg-success{% endif %}"
+                role="progressbar"
+                style="width: 0%"
+                data-target-width="{{ forensic.evidence_freq|floatformat:0 }}%">
+            </div>
+            {% else %}
+            <div class="progress-bar bg-secondary" style="width: 100%; opacity: 0.15;"></div>
+            {% endif %}
+        </div>
+        {% if forensic.freq_level == 'UNAVAILABLE' %}<small style="color: var(--text-muted); font-size: 0.7rem;">Frequency analysis unavailable</small>{% endif %}
+    </div>
+
+    {# Noise Evidence #}
+    <div class="ds-evidence-row">
+        <div class="ds-evidence-label-group">
+            <span class="ds-evidence-label"><i class="bi bi-soundwave me-1"></i>Noise/Artifact Evidence</span>
+            <span class="ds-evidence-score">
+                {% if forensic.noise_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_noise|floatformat:0 }}{% endif %}
+            </span>
+        </div>
+        <div class="progress ds-evidence-progress">
+            {% if forensic.noise_level != 'UNAVAILABLE' %}
+            <div class="progress-bar ds-evidence-bar
+                {% if forensic.evidence_noise >= 65 %}bg-danger
+                {% elif forensic.evidence_noise >= 35 %}bg-warning
+                {% else %}bg-success{% endif %}"
+                role="progressbar"
+                style="width: 0%"
+                data-target-width="{{ forensic.evidence_noise|floatformat:0 }}%">
+            </div>
+            {% else %}
+            <div class="progress-bar bg-secondary" style="width: 100%; opacity: 0.15;"></div>
+            {% endif %}
+        </div>
+        {% if forensic.noise_level == 'UNAVAILABLE' %}<small style="color: var(--text-muted); font-size: 0.7rem;">Noise analysis unavailable</small>{% endif %}
+    </div>
+
+    {# Copy-Move Evidence #}
+    <div class="ds-evidence-row">
+        <div class="ds-evidence-label-group">
+            <span class="ds-evidence-label"><i class="bi bi-front me-1"></i>Copy-Move Evidence</span>
+            <span class="ds-evidence-score">
+                {% if forensic.copy_move_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_copy_move|floatformat:0 }}{% endif %}
+            </span>
+        </div>
+        <div class="progress ds-evidence-progress">
+            {% if forensic.copy_move_level != 'UNAVAILABLE' %}
+            <div class="progress-bar ds-evidence-bar
+                {% if forensic.evidence_copy_move >= 65 %}bg-danger
+                {% elif forensic.evidence_copy_move >= 35 %}bg-warning
+                {% else %}bg-success{% endif %}"
+                role="progressbar"
+                style="width: 0%"
+                data-target-width="{{ forensic.evidence_copy_move|floatformat:0 }}%">
+            </div>
+            {% else %}
+            <div class="progress-bar bg-secondary" style="width: 100%; opacity: 0.15;"></div>
+            {% endif %}
+        </div>
+        {% if forensic.copy_move_level == 'UNAVAILABLE' %}<small style="color: var(--text-muted); font-size: 0.7rem;">Copy-move analysis unavailable</small>{% endif %}
+    </div>
+
+    {# Face Boundary Evidence #}
+    <div class="ds-evidence-row">
+        <div class="ds-evidence-label-group">
+            <span class="ds-evidence-label"><i class="bi bi-vector-pen me-1"></i>Face Boundary Evidence</span>
+            <span class="ds-evidence-score">
+                {% if forensic.face_boundary_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_boundary|floatformat:0 }}{% endif %}
+            </span>
+        </div>
+        <div class="progress ds-evidence-progress">
+            {% if forensic.face_boundary_level != 'UNAVAILABLE' %}
+            <div class="progress-bar ds-evidence-bar
+                {% if forensic.evidence_boundary >= 65 %}bg-danger
+                {% elif forensic.evidence_boundary >= 35 %}bg-warning
+                {% else %}bg-success{% endif %}"
+                role="progressbar"
+                style="width: 0%"
+                data-target-width="{{ forensic.evidence_boundary|floatformat:0 }}%">
+            </div>
+            {% else %}
+            <div class="progress-bar bg-secondary" style="width: 100%; opacity: 0.15;"></div>
+            {% endif %}
+        </div>
+        {% if forensic.face_boundary_level == 'UNAVAILABLE' %}<small style="color: var(--text-muted); font-size: 0.7rem;">No face detected — boundary analysis unavailable</small>{% endif %}
+    </div>
+
+    {# Resampling Evidence #}
+    <div class="ds-evidence-row">
+        <div class="ds-evidence-label-group">
+            <span class="ds-evidence-label"><i class="bi bi-aspect-ratio me-1"></i>Resampling Evidence</span>
+            <span class="ds-evidence-score">
+                {% if forensic.resampling_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_resampling|floatformat:0 }}{% endif %}
+            </span>
+        </div>
+        <div class="progress ds-evidence-progress">
+            {% if forensic.resampling_level != 'UNAVAILABLE' %}
+            <div class="progress-bar ds-evidence-bar
+                {% if forensic.evidence_resampling >= 65 %}bg-danger
+                {% elif forensic.evidence_resampling >= 35 %}bg-warning
+                {% else %}bg-success{% endif %}"
+                role="progressbar"
+                style="width: 0%"
+                data-target-width="{{ forensic.evidence_resampling|floatformat:0 }}%">
+            </div>
+            {% else %}
+            <div class="progress-bar bg-secondary" style="width: 100%; opacity: 0.15;"></div>
+            {% endif %}
+        </div>
+        {% if forensic.resampling_level == 'UNAVAILABLE' %}<small style="color: var(--text-muted); font-size: 0.7rem;">Resampling analysis unavailable</small>{% endif %}
+    </div>
+
+    {# Metadata Evidence #}
+    <div class="ds-evidence-row">
+        <div class="ds-evidence-label-group">
+            <span class="ds-evidence-label"><i class="bi bi-info-square me-1"></i>Metadata Evidence</span>
+            <span class="ds-evidence-score">{{ forensic.evidence_meta|floatformat:0 }}</span>
+        </div>
+        <div class="progress ds-evidence-progress">
+            <div class="progress-bar ds-evidence-bar
+                {% if forensic.evidence_meta >= 65 %}bg-danger
+                {% elif forensic.evidence_meta >= 35 %}bg-warning
+                {% else %}bg-success{% endif %}"
+                role="progressbar"
+                style="width: 0%"
+                data-target-width="{{ forensic.evidence_meta|floatformat:0 }}%">
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# Overall risk score #}
+<div class="mt-4 pt-3" style="border-top: 1px solid var(--border-subtle);">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span style="font-weight: 600; color: var(--text-primary);">Overall Forensic Risk Score</span>
+        <span class="ds-badge ds-badge-lg {{ forensic.get_risk_display_class }}">
+            {{ forensic.overall_risk }} — {{ forensic.overall_risk_score|floatformat:1 }}/100
+        </span>
+    </div>
+    <div class="progress" style="height: 12px; border-radius: 6px; background: rgba(255,255,255,0.05);">
+        <div class="progress-bar ds-evidence-bar
+            {% if forensic.overall_risk == 'LOW' %}bg-success
+            {% elif forensic.overall_risk == 'MEDIUM' %}bg-warning
+            {% else %}bg-danger{% endif %}"
+            role="progressbar"
+            style="width: 0%; border-radius: 6px;"
+            data-target-width="{{ forensic.overall_risk_score|floatformat:0 }}%">
+        </div>
+    </div>
+</div>
+
+<script nonce="{{ csp_nonce }}">
+// Animate evidence bars when they become visible
+(function() {
+    function animateBars() {
+        document.querySelectorAll('.ds-evidence-bar').forEach(function(bar) {
+            if (!bar.dataset.animated) {
+                var target = bar.getAttribute('data-target-width') || '0%';
+                bar.dataset.animated = '1';
+                setTimeout(function() {
+                    bar.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+                    bar.style.width = target;
+                }, 100);
+            }
+        });
+    }
+
+    // Use IntersectionObserver if available, otherwise just animate
+    if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    animateBars();
+                    observer.disconnect();
+                }
+            });
+        }, { threshold: 0.1 });
+        var target = document.querySelector('.ds-evidence-bars');
+        if (target) observer.observe(target);
+    } else {
+        animateBars();
+    }
+})();
+</script>

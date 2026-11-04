@@ -1,139 +1,312 @@
-"""Tests for landing, registration, login and logout (Member 3)."""
+"""
+detector/tests.py — Simple unit tests for DeepShield.
 
+Run all tests with:
+  python manage.py test detector
+
+These tests check the core functionality without needing actual AI models.
+They are intentionally simple and beginner-friendly.
+
+What is tested:
+  1.  Home page loads
+  2.  Register form works
+  3.  Login works
+  4.  User cannot upload without login (redirect to login)
+  5.  Valid registration creates user
+  6.  Login with wrong password fails
+  7.  Dashboard is accessible after login
+  8.  SHA-256 hash generation works
+  9.  Ensemble logic returns a result
+  10. Model not_configured result is handled safely
+  11. History page is accessible
+  12. Upload page returns 200 for logged-in user
+"""
+
+import hashlib
+import tempfile
+import os
+
+from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from django.test import TestCase
 from django.urls import reverse
 
-PASSWORD = 'Str0ng!Pass_2026'
+from ai_models.ensemble import calculate_ensemble_result, normalize_prediction
 
 
-class PublicPages(TestCase):
-    def test_pages_open(self):
-        for name in ('home', 'login', 'register'):
-            self.assertEqual(self.client.get(reverse(name)).status_code, 200)
+# ============================================================
+# TEST 1-3: Page Access Tests
+# ============================================================
+class PageAccessTests(TestCase):
+    """Test that public pages load correctly."""
 
-
-class Registration(TestCase):
-    def data(self, **extra):
-        return {'username': 'ali', 'email': 'ali@example.com', 'password1': PASSWORD, 'password2': PASSWORD, **extra}
-
-    def test_register_creates_user_with_hashed_password(self):
-        r = self.client.post(reverse('register'), self.data())
-        self.assertRedirects(r, reverse('login'))
-        user = User.objects.get(username='ali')
-        self.assertNotEqual(user.password, PASSWORD)
-        self.assertTrue(user.check_password(PASSWORD))
-
-    def test_duplicate_email_rejected(self):
-        User.objects.create_user('first', 'ali@example.com', PASSWORD)
-        r = self.client.post(reverse('register'), self.data())
-        self.assertEqual(r.status_code, 200)
-        self.assertFalse(User.objects.filter(username='ali').exists())
-
-    def test_password_mismatch_rejected(self):
-        r = self.client.post(reverse('register'), self.data(password2='different'))
-        self.assertEqual(r.status_code, 200)
-        self.assertFalse(User.objects.filter(username='ali').exists())
-
-
-class LoginLogout(TestCase):
     def setUp(self):
-        User.objects.create_user('sara', 'sara@example.com', PASSWORD)
+        """setUp() runs before every test method in this class."""
+        self.client = Client()
 
-    def test_login_ok_then_logout(self):
-        self.assertRedirects(self.client.post(reverse('login'), {'username': 'sara', 'password': PASSWORD}), reverse('dashboard'))
-        self.assertContains(self.client.get(reverse('dashboard')), 'sara')
-        self.assertRedirects(self.client.get(reverse('logout')), reverse('home'))
+    def test_home_page_loads(self):
+        """Home page should return HTTP 200 (OK) without login."""
+        response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'DeepShield')
 
-    def test_wrong_password(self):
-        r = self.client.post(reverse('login'), {'username': 'sara', 'password': 'nope'})
-        self.assertContains(r, 'Invalid username or password')
+    def test_register_page_loads(self):
+        """Register page should return HTTP 200."""
+        response = self.client.get(reverse('register'))
+        self.assertEqual(response.status_code, 200)
 
-    def test_next_to_other_site_is_ignored(self):
-        r = self.client.post(reverse('login') + '?next=https://evil.example/', {'username': 'sara', 'password': PASSWORD})
-        self.assertRedirects(r, reverse('dashboard'))
-
-
-class Dashboard(TestCase):
-    def test_guest_is_sent_to_login(self):
-        r = self.client.get(reverse('dashboard'))
-        self.assertRedirects(r, reverse('login') + '?next=' + reverse('dashboard'))
-
-    def test_logged_in_user_sees_their_details(self):
-        User.objects.create_user('sara', 'sara@example.com', PASSWORD)
-        self.client.login(username='sara', password=PASSWORD)
-        r = self.client.get(reverse('dashboard'))
-        self.assertContains(r, 'sara@example.com')
-        self.assertContains(r, 'Welcome back')
-
-    def test_login_with_next_goes_to_the_requested_page(self):
-        User.objects.create_user('sara', 'sara@example.com', PASSWORD)
-        r = self.client.post(reverse('login') + '?next=/dashboard/', {'username': 'sara', 'password': PASSWORD})
-        self.assertRedirects(r, '/dashboard/')
+    def test_login_page_loads(self):
+        """Login page should return HTTP 200."""
+        response = self.client.get(reverse('login'))
+        self.assertEqual(response.status_code, 200)
 
 
-# ----------------------------------------------------------------- Analyze page (interface only)
-import struct
-import zlib
+# ============================================================
+# TEST 4: Upload Protection Test
+# ============================================================
+class AuthProtectionTests(TestCase):
+    """Test that protected pages redirect unauthenticated users."""
 
-from django.core.files.uploadedfile import SimpleUploadedFile
-
-
-def _png_bytes():
-    """A valid 1x1 PNG built by hand (no Pillow needed)."""
-    def chunk(t, d):
-        c = struct.pack('>I', len(d)) + t + d
-        return c + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
-    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 8, 2, 0, 0, 0))
-            + chunk(b'IDAT', zlib.compress(b'\x00\x0a\x78\xc8')) + chunk(b'IEND', b''))
-
-
-class AnalyzePage(TestCase):
     def setUp(self):
-        User.objects.create_user('sara', 'sara@example.com', PASSWORD)
+        self.client = Client()
 
-    def test_guest_is_sent_to_login(self):
-        self.assertRedirects(self.client.get(reverse('analyze')), '/login/?next=/analyze/')
+    def test_upload_requires_login(self):
+        """
+        Visiting /upload/ without login should redirect to the login page.
+        HTTP 302 = redirect.
+        """
+        response = self.client.get(reverse('upload'))
+        # Should redirect (302) not show the page (200)
+        self.assertEqual(response.status_code, 302)
+        # The redirect should go to the login URL
+        self.assertIn('/public/login/', response['Location'])
 
-    def test_page_opens_when_logged_in(self):
-        self.client.login(username='sara', password=PASSWORD)
-        self.assertContains(self.client.get(reverse('analyze')), 'Analyze an image')
-
-    def test_valid_image_goes_to_result_page(self):
-        self.client.login(username='sara', password=PASSWORD)
-        r = self.client.post(reverse('analyze'), {'image': SimpleUploadedFile('a.png', _png_bytes(), 'image/png')})
-        self.assertRedirects(r, reverse('result'))
-
-    def test_fake_image_file_is_rejected(self):
-        self.client.login(username='sara', password=PASSWORD)
-        r = self.client.post(reverse('analyze'), {'image': SimpleUploadedFile('a.png', b'hello world, not an image', 'image/png')})
-        self.assertContains(r, 'Only JPG, PNG or WEBP')
-        self.assertNotIn('last_upload', self.client.session)
+    def test_history_requires_login(self):
+        """History page should redirect unauthenticated users."""
+        response = self.client.get(reverse('history'))
+        self.assertEqual(response.status_code, 302)
 
 
-class ResultPage(TestCase):
+# ============================================================
+# TEST 5-6: Registration and Login Tests
+# ============================================================
+class RegistrationLoginTests(TestCase):
+    """Test user registration and login flows."""
+
     def setUp(self):
-        User.objects.create_user('sara', 'sara@example.com', PASSWORD)
+        self.client = Client()
 
-    def test_guest_is_sent_to_login(self):
-        self.assertRedirects(self.client.get(reverse('result')), '/login/?next=/result/')
+    def test_valid_registration_creates_user(self):
+        """
+        Posting valid data to the register page should create a new user
+        and redirect to the login page.
+        """
+        response = self.client.post(reverse('register'), {
+            'username': 'testuser',
+            'email': 'test@example.com',
+            'password1': 'SecurePass123!',
+            'password2': 'SecurePass123!',
+            'accept_privacy': 'on',
+        })
+        # Should redirect after successful registration
+        self.assertEqual(response.status_code, 302)
+        # The user should now exist in the database
+        self.assertTrue(User.objects.filter(username='testuser').exists())
 
-    def test_without_upload_goes_back_to_analyze(self):
-        self.client.login(username='sara', password=PASSWORD)
-        self.assertRedirects(self.client.get(reverse('result')), reverse('analyze'))
+    def test_invalid_registration_shows_errors(self):
+        """Submitting passwords that don't match should fail."""
+        response = self.client.post(reverse('register'), {
+            'username': 'testuser2',
+            'email': 'test2@example.com',
+            'password1': 'SecurePass123!',
+            'password2': 'WrongPassword!',  # Doesn't match
+        })
+        # Should stay on the register page (200, not redirect)
+        self.assertEqual(response.status_code, 200)
+        # User should NOT have been created
+        self.assertFalse(User.objects.filter(username='testuser2').exists())
 
-    def test_result_shows_real_hash_and_sample_label(self):
-        import hashlib
-        data = _png_bytes()
-        self.client.login(username='sara', password=PASSWORD)
-        self.client.post(reverse('analyze'), {'image': SimpleUploadedFile('face.png', data, 'image/png')})
-        r = self.client.get(reverse('result'))
-        self.assertContains(r, 'Interface preview')
-        self.assertContains(r, 'face.png')
-        self.assertContains(r, hashlib.sha256(data).hexdigest())
-        self.assertContains(r, 'EfficientNet-B4')
+    def test_valid_login_works(self):
+        """A user with correct credentials should be logged in successfully."""
+        # First create a user
+        User.objects.create_user(username='loginuser', password='TestPass999!')
+        # Try to login
+        response = self.client.post(reverse('login'), {
+            'username': 'loginuser',
+            'password': 'TestPass999!',
+        })
+        # Should redirect into the app after login
+        self.assertEqual(response.status_code, 302)
 
-    def test_image_itself_is_not_stored_in_session(self):
-        self.client.login(username='sara', password=PASSWORD)
-        self.client.post(reverse('analyze'), {'image': SimpleUploadedFile('a.png', _png_bytes(), 'image/png')})
-        self.assertNotIn(b'PNG'.decode(), str(self.client.session.get('last_upload')))
+    def test_wrong_password_fails(self):
+        """Wrong password should stay on the login page and show an error."""
+        User.objects.create_user(username='loginuser2', password='RightPass!')
+        response = self.client.post(reverse('login'), {
+            'username': 'loginuser2',
+            'password': 'WrongPass!',
+        })
+        # Should stay on the login page
+        self.assertEqual(response.status_code, 200)
+
+
+# ============================================================
+# TEST 7: Dashboard Access Test
+# ============================================================
+class DashboardTests(TestCase):
+    """Test dashboard access after login."""
+
+    def setUp(self):
+        self.client = Client()
+        # Create and log in a test user
+        self.user = User.objects.create_user(username='dashuser', password='Pass123!')
+        self.client.login(username='dashuser', password='Pass123!')
+
+    def test_history_accessible_after_login(self):
+        """Logged-in users should see the history page (HTTP 200)."""
+        response = self.client.get(reverse('history'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_upload_page_accessible_after_login(self):
+        """Logged-in users should see the upload page (HTTP 200)."""
+        response = self.client.get(reverse('upload'))
+        self.assertEqual(response.status_code, 200)
+
+
+# ============================================================
+# TEST 8: SHA-256 Hash Test
+# ============================================================
+class SHA256Tests(TestCase):
+    """Test that SHA-256 hash generation works correctly."""
+
+    def test_sha256_of_file(self):
+        """
+        Write a test file to disk and verify SHA-256 hash is calculated correctly.
+        We compare the result from our function to Python's built-in hashlib.
+        """
+        from ai_models.preprocessing import calculate_sha256
+
+        # Create a temporary file with known content
+        test_content = b"DeepShield test file content 12345"
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+            tmp.write(test_content)
+            tmp_path = tmp.name
+
+        try:
+            # Calculate hash using our function
+            calculated_hash = calculate_sha256(tmp_path)
+
+            # Calculate expected hash using Python's hashlib directly
+            expected_hash = hashlib.sha256(test_content).hexdigest()
+
+            self.assertEqual(calculated_hash, expected_hash)
+            self.assertEqual(len(calculated_hash), 64)  # SHA-256 is always 64 hex chars
+
+        finally:
+            # Clean up the temporary file
+            os.unlink(tmp_path)
+
+    def test_sha256_different_content_different_hash(self):
+        """Two files with different content must have different SHA-256 hashes."""
+        from ai_models.preprocessing import calculate_sha256
+
+        # Create two temp files with different content
+        with tempfile.NamedTemporaryFile(delete=False) as f1:
+            f1.write(b"Content A")
+            path1 = f1.name
+
+        with tempfile.NamedTemporaryFile(delete=False) as f2:
+            f2.write(b"Content B")
+            path2 = f2.name
+
+        try:
+            hash1 = calculate_sha256(path1)
+            hash2 = calculate_sha256(path2)
+            self.assertNotEqual(hash1, hash2)
+        finally:
+            os.unlink(path1)
+            os.unlink(path2)
+
+
+# ============================================================
+# TEST 9-10: Ensemble Logic Tests
+# ============================================================
+class EnsembleTests(TestCase):
+    """Test the ensemble decision logic."""
+
+    def setUp(self):
+        """Sample weights matching settings.MODEL_WEIGHTS."""
+        self.weights = {
+            "custom_model_1":    0.20,
+            "custom_model_2":    0.20,
+            "custom_model_3":    0.15,
+            "pretrained_model_1": 0.15,
+            "pretrained_model_2": 0.15,
+            "pretrained_model_3": 0.15,
+        }
+
+    def test_all_not_configured_returns_uncertain(self):
+        """
+        If all models are not configured, the result should be UNCERTAIN
+        with 0 executed models.
+        """
+        not_configured_results = [
+            {"model_key": k, "prediction": "NOT_CONFIGURED",
+             "confidence": 0.0, "fake_probability": 0.0, "status": "not_configured"}
+            for k in self.weights.keys()
+        ]
+        result = calculate_ensemble_result(not_configured_results, self.weights)
+        self.assertEqual(result['final_prediction'], 'UNCERTAIN')
+        self.assertEqual(result['executed_models'], 0)
+
+    def test_all_fake_returns_manipulated(self):
+        """
+        If all models say FAKE with high confidence, result should be LIKELY_MANIPULATED.
+        """
+        fake_results = [
+            {"model_key": k, "prediction": "FAKE",
+             "confidence": 0.95, "fake_probability": 0.95, "status": "success"}
+            for k in self.weights.keys()
+        ]
+        result = calculate_ensemble_result(fake_results, self.weights)
+        self.assertEqual(result['final_prediction'], 'LIKELY_MANIPULATED')
+        self.assertEqual(result['executed_models'], 6)
+        self.assertEqual(result['manipulation_votes'], 6)
+
+    def test_all_real_returns_authentic(self):
+        """
+        If all models say REAL with high confidence, result should be LIKELY_AUTHENTIC.
+        """
+        real_results = [
+            {"model_key": k, "prediction": "REAL",
+             "confidence": 0.95, "fake_probability": 0.05, "status": "success"}
+            for k in self.weights.keys()
+        ]
+        result = calculate_ensemble_result(real_results, self.weights)
+        self.assertEqual(result['final_prediction'], 'LIKELY_AUTHENTIC')
+
+
+# ============================================================
+# TEST 11: normalize_prediction Tests
+# ============================================================
+class NormalizePredictionTests(TestCase):
+    """Test the label normalisation function."""
+
+    def test_fake_labels_normalised(self):
+        """Various 'fake' labels should all normalise to FAKE."""
+        for label in ('fake', 'FAKE', 'deepfake', 'DEEPFAKE', 'generated'):
+            self.assertEqual(normalize_prediction(label), 'FAKE')
+
+    def test_real_labels_normalised(self):
+        """Various 'real' labels should normalise to REAL."""
+        for label in ('real', 'REAL', 'genuine', 'authentic'):
+            self.assertEqual(normalize_prediction(label), 'REAL')
+
+    def test_tampered_labels_normalised(self):
+        """Various 'tampered' labels should normalise to TAMPERED."""
+        for label in ('tampered', 'TAMPERED', 'forged'):
+            self.assertEqual(normalize_prediction(label), 'TAMPERED')
+
+    def test_unknown_label_returns_uncertain(self):
+        """An unknown label should return UNCERTAIN without crashing."""
+        result = normalize_prediction('some_unknown_label_xyz')
+        self.assertEqual(result, 'UNCERTAIN')

@@ -1,0 +1,509 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forensic Report — {{ upload.original_filename }} — DeepShield</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        /* ================================================
+           FORENSIC REPORT — PRINT-OPTIMIZED STYLES
+           Screen: Dark premium look
+           Print:  Clean black-on-white professional report
+        ================================================ */
+
+        .report-body {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* ---- Report Header ---- */
+        .report-header {
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .report-logo { color: var(--accent); font-size: 1.3rem; font-weight: 700; letter-spacing: -0.5px; }
+        .report-subtitle { color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; }
+        .report-title { font-size: 1.6rem; font-weight: 700; color: var(--text-primary); margin: 0.5rem 0 0 0; }
+        .report-timestamp { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+        /* ---- Section headers ---- */
+        .report-section { margin-bottom: 2rem; }
+        .report-section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0.4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* ---- Data grid ---- */
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.5rem; }
+        .report-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .report-field { padding: 0.4rem 0; border-bottom: 1px solid var(--border-subtle); }
+        .report-field-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .report-field-value { font-size: 0.9rem; color: var(--text-primary); font-weight: 500; margin-top: 0.15rem; }
+        .report-field-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; word-break: break-all; }
+
+        /* ---- Verdict box ---- */
+        .report-verdict {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            margin-bottom: 1rem;
+        }
+        .report-verdict-label {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 2px; color: var(--text-muted); margin-bottom: 0.5rem;
+        }
+        .report-verdict-value {
+            font-size: 1.8rem; font-weight: 800;
+        }
+        .report-verdict-value.manipulated { color: var(--danger); }
+        .report-verdict-value.authentic   { color: var(--success); }
+        .report-verdict-value.uncertain   { color: var(--warning); }
+        .report-verdict-confidence { font-size: 1rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
+        /* ---- Model results table ---- */
+        .report-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        .report-table thead tr { border-bottom: 2px solid var(--border-subtle); }
+        .report-table th { padding: 0.6rem 0.75rem; text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+        .report-table td { padding: 0.75rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
+        .report-table tr:last-child td { border-bottom: none; }
+
+        /* ---- Evidence bars ---- */
+        .report-evidence-row { margin-bottom: 0.75rem; }
+        .report-evidence-label { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.25rem; display: flex; justify-content: space-between; }
+        .report-evidence-bar-wrap { height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+        .report-evidence-bar-fill { height: 100%; border-radius: 4px; }
+
+        /* ---- Forensic images ---- */
+        .report-forensic-images { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .report-forensic-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-subtle); }
+        .report-img-label { font-size: 0.68rem; color: var(--text-muted); text-align: center; margin-top: 0.25rem; }
+
+        /* ---- Disclaimer ---- */
+        .report-disclaimer {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-top: 2rem;
+        }
+        .report-disclaimer-title { color: var(--danger); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+        .report-disclaimer p { font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.65; }
+
+        /* ---- Page actions (screen only) ---- */
+        .report-actions { margin-bottom: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+        /* ================================================
+           PRINT OVERRIDES
+        ================================================ */
+        @media print {
+            body { background: #fff !important; color: #111 !important; }
+            .report-actions { display: none !important; }
+            .report-header { border-color: #333; }
+            .report-section-title { color: #333; border-color: #ccc; }
+            .report-field { border-color: #eee; }
+            .report-field-label { color: #666; }
+            .report-field-value { color: #111; }
+            .report-verdict { background: #f8f8f8; border-color: #ccc; }
+            .report-verdict-value.manipulated { color: #c00; }
+            .report-verdict-value.authentic   { color: #080; }
+            .report-verdict-value.uncertain   { color: #860; }
+            .report-evidence-bar-wrap { background: #eee; }
+            .report-table th { color: #555; }
+            .report-table td { color: #111; }
+            .report-table thead tr { border-color: #ccc; }
+            .report-table td { border-color: #eee; }
+            .report-disclaimer { background: #fff3f3; border-color: #f00; }
+            .report-disclaimer-title { color: #c00; }
+            .report-disclaimer p { color: #333; }
+            .badge { border: 1px solid #ccc; background: #f0f0f0 !important; color: #333 !important; }
+        }
+    </style>
+</head>
+<body>
+<div class="report-body">
+
+    {# ==================== ACTION BUTTONS (screen only) ==================== #}
+    <div class="report-actions">
+        <button id="printBtn" type="button" class="btn ds-btn-primary btn-sm">
+            <i class="bi bi-printer me-1"></i>Print / Save as PDF
+        </button>
+        <a href="{% url 'result' upload.pk %}" class="btn ds-btn-outline btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Result
+        </a>
+        <a href="{% url 'upload' %}" class="btn ds-btn-outline btn-sm">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+        </a>
+    </div>
+
+    {# ==================== REPORT HEADER ==================== #}
+    <div class="report-header">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <div class="report-logo"><i class="bi bi-shield-fill-check me-1"></i>DeepShield</div>
+                <div class="report-subtitle">AI-Powered Deepfake Detection & Digital Image Forensics</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Report Generated</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;">{{ report_time|date:"N j, Y" }}</div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">{{ report_time|time:"H:i:s" }} PKT</div>
+            </div>
+        </div>
+        <h1 class="report-title mt-3">Forensic Analysis Report</h1>
+        <div class="report-timestamp">Prepared by DeepShield for: {{ user.username }}</div>
+    </div>
+
+    {# ==================== 1. FILE INFORMATION ==================== #}
+    <div class="report-section">
+        <div class="report-section-title"><i class="bi bi-file-image me-1"></i>1. File Information</div>
+        <div class="report-grid">
+            <div class="report-field">
+                <div class="report-field-label">Original Filename</div>
+                <div class="report-field-value">{{ upload.original_filename }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Upload Date</div>
+                <div class="report-field-value">{{ upload.uploaded_at|date:"N j, Y H:i:s" }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">File Size</div>
+                <div class="report-field-value">{{ upload.get_file_size_display }}</div>
+            </div>
+            {% if forensic %}
+            <div class="report-field">
+                <div class="report-field-label">Image Format</div>
+                <div class="report-field-value">{{ forensic.meta_format }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Resolution</div>
+                <div class="report-field-value">{{ forensic.get_meta_resolution }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Color Mode</div>
+                <div class="report-field-value">{{ forensic.meta_mode|default:"Unknown" }}</div>
+            </div>
+            {% endif %}
+            <div class="report-field">
+                <div class="report-field-label">Processing Status</div>
+                <div class="report-field-value">{{ upload.get_processing_status_display }}</div>
+            </div>
+        </div>
+    </div>
+
+    {# ==================== 2. SHA-256 INTEGRITY ==================== #}
+    <div class="report-section">
+        <div class="report-section-title"><i class="bi bi-fingerprint me-1"></i>2. File Integrity (SHA-256)</div>
+        <div class="report-field">
+            <div class="report-field-label">SHA-256 Hash</div>
+            <div class="report-field-value report-field-mono">{{ upload.sha256_hash|default:"Not computed" }}</div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem;">
+            SHA-256 is a 256-bit cryptographic hash used for file integrity verification and exact duplicate detection.
+            It does NOT determine whether an image is authentic or manipulated.
+        </p>
+    </div>
+
+    {# ==================== 3. FACE DETECTION ==================== #}
+    <div class="report-section">
+        <div class="report-section-title"><i class="bi bi-person-bounding-box me-1"></i>3. Face Detection</div>
+        <div class="report-grid">
+            <div class="report-field">
+                <div class="report-field-label">Face Detected</div>
+                <div class="report-field-value">{% if upload.face_detected %}Yes — {{ upload.face_count }} face{% if upload.face_count != 1 %}s{% endif %} found{% else %}No face detected{% endif %}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Algorithm</div>
+                <div class="report-field-value">OpenCV Haar Cascade</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Analysis Input</div>
+                <div class="report-field-value">{% if upload.face_detected %}Cropped face region{% else %}Full image (no face crop){% endif %}</div>
+            </div>
+        </div>
+    </div>
+
+    {# ==================== 4. AI MODEL RESULTS ==================== #}
+    {% if analysis %}
+    <div class="report-section">
+        <div class="report-section-title"><i class="bi bi-cpu me-1"></i>4. Individual AI Model Results</div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Model</th>
+                    <th>Type</th>
+                    <th>Prediction</th>
+                    <th>Model score (uncalibrated, 0–1)</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mr in model_results %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td><strong>{{ mr.model_name }}</strong></td>
+                    <td>{{ mr.model_type }}</td>
+                    <td>
+                        {% if mr.status == 'not_configured' or mr.status == 'standby' or mr.prediction == 'STANDBY' %}Standby
+                        {% elif mr.status == 'error' %}Offline
+                        {% else %}{{ mr.prediction }}{% endif %}
+                    </td>
+                    <td>{% if mr.status == 'success' %}{{ mr.fake_probability|floatformat:2 }}{% else %}—{% endif %}</td>
+                    <td>{% if mr.status == 'not_configured' or mr.status == 'standby' %}Calibration Standby{% elif mr.status == 'success' %}Active{% else %}{{ mr.status|title }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# ==================== 5. ENSEMBLE RESULT ==================== #}
+    <div class="report-section">
+        <div class="report-section-title"><i class="bi bi-award me-1"></i>5. Ensemble Analysis Result</div>
+        <div class="report-verdict">
+            <div class="report-verdict-label">Final AI Prediction</div>
+            <div class="report-verdict-value
+                {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}manipulated
+                {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}authentic
+                {% else %}uncertain{% endif %}">
+                {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}⚠ Potentially Manipulated
+                {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}✓ Likely Authentic
+                {% else %}? Uncertain / Inconclusive{% endif %}
+            </div>
+            <div class="report-verdict-confidence">AI ensemble score: {% if rep_face and rep_face.score != None %}{{ rep_face.score|floatformat:2 }} / 1.00 (uncalibrated; not a probability){% else %}not available{% endif %}</div>
+        </div>
+        <div class="report-grid">
+            <div class="report-field"><div class="report-field-label">Authentic Votes</div><div class="report-field-value">{{ analysis.authentic_votes }}</div></div>
+            <div class="report-field"><div class="report-field-label">Manipulation Votes</div><div class="report-field-value">{{ analysis.manipulation_votes }}</div></div>
+            <div class="report-field"><div class="report-field-label">Models Executed</div><div class="report-field-value">{{ analysis.executed_models }}</div></div>
+            <div class="report-field"><div class="report-field-label">Unavailable Models</div><div class="report-field-value">{{ analysis.unavailable_models }}</div></div>
+        </div>
+        <div class="report-field">
+            <div class="report-field-label">Ensemble Explanation</div>
+            <div class="report-field-value" style="font-size: 0.85rem; line-height: 1.65;">{{ analysis.explanation }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ==================== 6. FORENSIC ANALYSIS ==================== #}
+    {% if forensic %}
+    <div class="report-section">
+        <div class="report-section-title"><i class="bi bi-microscope me-1"></i>6. Forensic Analysis Modules</div>
+
+        {# Forensic images row #}
+        {% if forensic.ela_image or forensic.freq_image or forensic.noise_image %}
+        <div class="report-forensic-images">
+            {% if upload.image %}
+            <div>
+                <img src="{{ upload.image.url }}" alt="Original" class="report-forensic-img">
+                <div class="report-img-label">Original Image</div>
+            </div>
+            {% endif %}
+            {% if forensic.ela_image %}
+            <div>
+                <img src="{{ forensic.ela_image.url }}" alt="ELA" class="report-forensic-img">
+                <div class="report-img-label">ELA Visualization</div>
+            </div>
+            {% endif %}
+            {% if forensic.freq_image %}
+            <div>
+                <img src="{{ forensic.freq_image.url }}" alt="Frequency" class="report-forensic-img">
+                <div class="report-img-label">Frequency Spectrum</div>
+            </div>
+            {% endif %}
+            {% if forensic.noise_image %}
+            <div>
+                <img src="{{ forensic.noise_image.url }}" alt="Noise" class="report-forensic-img">
+                <div class="report-img-label">Noise Residual</div>
+            </div>
+            {% endif %}
+            {% if forensic.copy_move_image %}
+            <div>
+                <img src="{{ forensic.copy_move_image.url }}" alt="Copy-move" class="report-forensic-img">
+                <div class="report-img-label">Copy-Move Matches</div>
+            </div>
+            {% endif %}
+            {% if forensic.face_boundary_image %}
+            <div>
+                <img src="{{ forensic.face_boundary_image.url }}" alt="Face boundary" class="report-forensic-img">
+                <div class="report-img-label">Face Boundary Zone</div>
+            </div>
+            {% endif %}
+            {% if forensic.resampling_image %}
+            <div>
+                <img src="{{ forensic.resampling_image.url }}" alt="Resampling" class="report-forensic-img">
+                <div class="report-img-label">Resampling Spectrum</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="report-grid report-grid-3 mb-3">
+            <div class="report-field">
+                <div class="report-field-label">ELA Anomaly Level</div>
+                <div class="report-field-value">{{ forensic.ela_level }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">ELA Score</div>
+                <div class="report-field-value">{{ forensic.ela_score|floatformat:1 }}/100</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Frequency Level</div>
+                <div class="report-field-value">{{ forensic.freq_level }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Low-Freq Pattern</div>
+                <div class="report-field-value">{{ forensic.freq_low_pattern }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">High-Freq Pattern</div>
+                <div class="report-field-value">{{ forensic.freq_high_pattern }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Noise Level</div>
+                <div class="report-field-value">{{ forensic.noise_level }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Noise Consistency</div>
+                <div class="report-field-value">{{ forensic.noise_consistency }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Mean Residual</div>
+                <div class="report-field-value">{{ forensic.noise_mean|floatformat:3 }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Copy-Move Level</div>
+                <div class="report-field-value">{{ forensic.copy_move_level }}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Copy-Move Cluster Size</div>
+                <div class="report-field-value">{{ forensic.copy_move_cluster_size }} matches</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Face Boundary Level</div>
+                <div class="report-field-value">{% if forensic.face_boundary_detected %}{{ forensic.face_boundary_level }}{% else %}No face detected{% endif %}</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">Resampling Level</div>
+                <div class="report-field-value">{{ forensic.resampling_level }} (peak ratio {{ forensic.resampling_peak_ratio|floatformat:1 }})</div>
+            </div>
+            <div class="report-field">
+                <div class="report-field-label">C2PA Content Credentials</div>
+                <div class="report-field-value">{{ forensic.get_c2pa_status_display }}</div>
+            </div>
+        </div>
+    </div>
+
+    {# ==================== 7. METADATA ==================== #}
+    <div class="report-section">
+        <div class="report-section-title"><i class="bi bi-info-square me-1"></i>7. Image Metadata (EXIF)</div>
+        <div class="report-grid">
+            <div class="report-field"><div class="report-field-label">EXIF Data</div><div class="report-field-value">{% if forensic.meta_has_exif %}Available ({{ forensic.meta_exif_count }} tags){% else %}Not available{% endif %}</div></div>
+            <div class="report-field"><div class="report-field-label">Camera Make</div><div class="report-field-value">{{ forensic.meta_camera_make|default:"Unknown" }}</div></div>
+            <div class="report-field"><div class="report-field-label">Camera Model</div><div class="report-field-value">{{ forensic.meta_camera_model|default:"Unknown" }}</div></div>
+            <div class="report-field"><div class="report-field-label">Software</div><div class="report-field-value">{{ forensic.meta_software|default:"Not recorded" }}</div></div>
+            <div class="report-field"><div class="report-field-label">Date/Time</div><div class="report-field-value">{{ forensic.meta_datetime|default:"Not available" }}</div></div>
+            <div class="report-field"><div class="report-field-label">Editing Software Detected</div><div class="report-field-value">{% if forensic.meta_is_editing_software %}Yes — {{ forensic.meta_editing_software_name }}{% else %}No{% endif %}</div></div>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem;">{{ forensic.meta_note }}</p>
+    </div>
+
+    {# ==================== 8. EVIDENCE AGGREGATION ==================== #}
+    <div class="report-section">
+        <div class="report-section-title"><i class="bi bi-bar-chart-steps me-1"></i>8. Forensic Evidence Aggregation</div>
+
+
+        <div class="report-evidence-row">
+            <div class="report-evidence-label"><span>AI Model Evidence</span><span>{{ forensic.evidence_ai|floatformat:0 }}/100</span></div>
+            <div class="report-evidence-bar-wrap">
+                <div class="report-evidence-bar-fill {% if forensic.evidence_ai >= 65 %}bg-danger{% elif forensic.evidence_ai >= 35 %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ forensic.evidence_ai|floatformat:0 }}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div class="report-evidence-row">
+            <div class="report-evidence-label"><span>ELA Evidence</span><span>{% if forensic.ela_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_ela|floatformat:0 }}/100{% endif %}</span></div>
+            <div class="report-evidence-bar-wrap">
+                <div class="report-evidence-bar-fill {% if forensic.evidence_ela >= 65 %}bg-danger{% elif forensic.evidence_ela >= 35 %}bg-warning{% else %}bg-success{% endif %}" style="width: {% if forensic.ela_level != 'UNAVAILABLE' %}{{ forensic.evidence_ela|floatformat:0 }}{% else %}0{% endif %}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div class="report-evidence-row">
+            <div class="report-evidence-label"><span>Frequency Evidence</span><span>{% if forensic.freq_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_freq|floatformat:0 }}/100{% endif %}</span></div>
+            <div class="report-evidence-bar-wrap">
+                <div class="report-evidence-bar-fill {% if forensic.evidence_freq >= 65 %}bg-danger{% elif forensic.evidence_freq >= 35 %}bg-warning{% else %}bg-success{% endif %}" style="width: {% if forensic.freq_level != 'UNAVAILABLE' %}{{ forensic.evidence_freq|floatformat:0 }}{% else %}0{% endif %}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div class="report-evidence-row">
+            <div class="report-evidence-label"><span>Noise/Artifact Evidence</span><span>{% if forensic.noise_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_noise|floatformat:0 }}/100{% endif %}</span></div>
+            <div class="report-evidence-bar-wrap">
+                <div class="report-evidence-bar-fill {% if forensic.evidence_noise >= 65 %}bg-danger{% elif forensic.evidence_noise >= 35 %}bg-warning{% else %}bg-success{% endif %}" style="width: {% if forensic.noise_level != 'UNAVAILABLE' %}{{ forensic.evidence_noise|floatformat:0 }}{% else %}0{% endif %}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div class="report-evidence-row">
+            <div class="report-evidence-label"><span>Copy-Move Evidence</span><span>{% if forensic.copy_move_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_copy_move|floatformat:0 }}/100{% endif %}</span></div>
+            <div class="report-evidence-bar-wrap">
+                <div class="report-evidence-bar-fill {% if forensic.evidence_copy_move >= 65 %}bg-danger{% elif forensic.evidence_copy_move >= 35 %}bg-warning{% else %}bg-success{% endif %}" style="width: {% if forensic.copy_move_level != 'UNAVAILABLE' %}{{ forensic.evidence_copy_move|floatformat:0 }}{% else %}0{% endif %}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div class="report-evidence-row">
+            <div class="report-evidence-label"><span>Face Boundary Evidence</span><span>{% if forensic.face_boundary_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_boundary|floatformat:0 }}/100{% endif %}</span></div>
+            <div class="report-evidence-bar-wrap">
+                <div class="report-evidence-bar-fill {% if forensic.evidence_boundary >= 65 %}bg-danger{% elif forensic.evidence_boundary >= 35 %}bg-warning{% else %}bg-success{% endif %}" style="width: {% if forensic.face_boundary_level != 'UNAVAILABLE' %}{{ forensic.evidence_boundary|floatformat:0 }}{% else %}0{% endif %}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div class="report-evidence-row">
+            <div class="report-evidence-label"><span>Resampling Evidence</span><span>{% if forensic.resampling_level == 'UNAVAILABLE' %}N/A{% else %}{{ forensic.evidence_resampling|floatformat:0 }}/100{% endif %}</span></div>
+            <div class="report-evidence-bar-wrap">
+                <div class="report-evidence-bar-fill {% if forensic.evidence_resampling >= 65 %}bg-danger{% elif forensic.evidence_resampling >= 35 %}bg-warning{% else %}bg-success{% endif %}" style="width: {% if forensic.resampling_level != 'UNAVAILABLE' %}{{ forensic.evidence_resampling|floatformat:0 }}{% else %}0{% endif %}%; height: 100%;"></div>
+            </div>
+        </div>
+        <div class="report-evidence-row">
+            <div class="report-evidence-label"><span>Metadata Evidence</span><span>{{ forensic.evidence_meta|floatformat:0 }}/100</span></div>
+            <div class="report-evidence-bar-wrap">
+                <div class="report-evidence-bar-fill {% if forensic.evidence_meta >= 65 %}bg-danger{% elif forensic.evidence_meta >= 35 %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ forensic.evidence_meta|floatformat:0 }}%; height: 100%;"></div>
+            </div>
+        </div>
+
+        <div class="report-field mt-3">
+            <div class="report-field-label">Overall Forensic Risk Score</div>
+            <div class="report-field-value" style="font-size: 1.1rem; font-weight: 700;">
+                {{ forensic.overall_risk }} — {{ forensic.overall_risk_score|floatformat:1 }}/100
+            </div>
+        </div>
+        <div class="report-field">
+            <div class="report-field-label">Risk Interpretation</div>
+            <div class="report-field-value" style="font-size: 0.85rem; line-height: 1.65;">{{ forensic.risk_interpretation }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ==================== 9. DISCLAIMER ==================== #}
+    <div class="report-disclaimer">
+        <div class="report-disclaimer-title"><i class="bi bi-shield-exclamation me-1"></i>Important Legal Disclaimer</div>
+        <p>{{ disclaimer }}</p>
+    </div>
+
+    {# Footer #}
+    <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); font-size: 0.72rem; color: var(--text-muted);">
+        DeepShield — AI-Powered Deepfake Detection & Digital Image Forensics &nbsp;|&nbsp;
+        Generated: {{ report_time|date:"Y-m-d H:i:s" }} &nbsp;|&nbsp;
+        For: {{ user.username }}
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<script nonce="{{ csp_nonce }}">document.getElementById('printBtn').addEventListener('click', function () { window.print(); });</script>
+</body>
+</html>

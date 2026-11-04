@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Forensic Analysis Result{% endblock %}
+
+{% block content %}
+<div class="rs-wrap">
+
+    {# ==================== PAGE HEADER ==================== #}
+    <div class="rs-head">
+        <div>
+            <p class="rs-eyebrow"><i class="bi bi-shield-fill-check me-1"></i>DeepShield Forensics</p>
+            <h1 class="rs-title">Forensic Analysis Report</h1>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if analysis %}
+            <a href="{% url 'report' upload.pk %}" class="btn ds-btn-outline btn-sm"><i class="bi bi-file-earmark-text me-1"></i>Full Report</a>
+            {% endif %}
+            <a href="{% url 'upload' %}" class="btn ds-btn-primary btn-sm"><i class="bi bi-scan me-1"></i>New Analysis</a>
+            <form method="post" action="{% url 'delete_analysis' upload.pk %}" class="d-inline m-0" id="deleteForm"
+                  data-confirm="Permanently delete this analysis and all its images? This cannot be undone.">
+                {% csrf_token %}
+                <button type="submit" class="btn ds-btn-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+            </form>
+        </div>
+    </div>
+
+    {% if analysis %}
+
+    {# ==================== VERDICT + MODEL SCORE CIRCLES ==================== #}
+    <div class="rs-verdict {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}bad{% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}good{% else %}unsure{% endif %}">
+        <div class="rs-vleft">
+            <div class="rs-verdict-kicker">Final verdict &middot; {{ analysis.executed_models }} of {{ expected_models }} model{% if expected_models != 1 %}s{% endif %} ran</div>
+            {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}
+            <div class="rs-verdict-label"><i class="bi bi-exclamation-triangle-fill me-2"></i>Potentially Manipulated</div>
+            {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}
+            <div class="rs-verdict-label"><i class="bi bi-check-circle-fill me-2"></i>Likely Authentic</div>
+            {% else %}
+            <div class="rs-verdict-label"><i class="bi bi-question-circle-fill me-2"></i>Uncertain / Inconclusive</div>
+            {% endif %}
+            {% if rep_face and rep_face.score != None %}
+            <div class="rs-score" id="ensembleScore"><b>{{ rep_face.score|floatformat:2 }}</b><small>/ 1.00 &middot; Not a probability</small></div>
+            {% endif %}
+            {% if forensic %}
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-2" id="forensicLevel">
+                <small style="color: var(--text-secondary);">Forensic indicators</small>
+                <span class="badge {% if forensic.overall_risk == 'LOW' %}bg-success{% elif forensic.overall_risk == 'MEDIUM' %}bg-warning text-dark{% elif forensic.overall_risk == 'HIGH' %}bg-danger{% else %}bg-secondary{% endif %}">{{ forensic.overall_risk|default:"Unavailable" }}</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="rs-rings-wrap">
+            {% for f in faces_view %}
+            <div class="rs-rings rs-facegroup" data-face="{{ f.face_index }}" {% if rep_face and not f.representative %}hidden{% elif not rep_face and not forloop.first %}hidden{% endif %}>
+                {% for mr in f.model_results %}
+                <button type="button" class="rs-ringitem" data-goto="m{{ f.face_index }}_{{ forloop.counter }}" title="{{ mr.model_name }}: open details">
+                    {% if mr.status == 'success' %}
+                    <span class="rs-ring {% if mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}bad{% elif mr.prediction == 'REAL' or mr.prediction == 'ORIGINAL' %}good{% else %}warn{% endif %}" style="--p: {{ mr.get_fake_probability_percent }};"><b>{{ mr.fake_probability|floatformat:2 }}</b></span>
+                    {% else %}
+                    <span class="rs-ring off"><b>&ndash;</b></span>
+                    {% endif %}
+                    <span class="rs-ringname">{{ mr.model_name }}</span>
+                </button>
+                {% endfor %}
+            </div>
+            {% empty %}
+            <small class="text-muted">No face found, so no model scores.</small>
+            {% endfor %}
+            {% if faces_view %}<small class="text-muted d-block mt-2">Raw score from 0 to 1 per model (uncalibrated; higher = more manipulation-like).</small>{% endif %}
+        </div>
+    </div>
+
+    <details class="rs-details-card">
+        <summary><span><i class="bi bi-card-text me-2"></i>Why this verdict &amp; how to read it</span><i class="bi bi-chevron-down rs-chev" aria-hidden="true"></i></summary>
+        <div>
+            <p style="font-size:.88rem; color: var(--text-secondary); line-height:1.6;">{{ analysis_explanation }}</p>
+            {% if rep_face and rep_face.score != None %}
+            <p class="small text-muted">{% if rep_face.validated %}Calibrated on validation data.{% else %}<strong>Not a probability.</strong> This is an uncalibrated model score (higher = more manipulation-like); it has not been validated against a labelled test set.{% endif %}</p>
+            {% elif analysis.final_prediction == 'UNCERTAIN' %}
+            <p class="small text-muted">No reliable AI score is available for this image.</p>
+            {% endif %}
+            {% if forensic %}<p class="small text-muted">Forensic indicators are supporting evidence only. They can be triggered by ordinary editing, compression or resizing and are not proof of manipulation.</p>{% endif %}
+            {% if analysis.executed_models > 0 %}
+            <p class="small text-muted"><strong>Model agreement:</strong> {{ analysis.executed_models }} of {{ expected_models }} models ran &middot; {{ analysis.authentic_votes }} authentic &mdash; {{ analysis.manipulation_votes }} manipulation{% if unavailable_models %} &middot; {{ unavailable_models }} unavailable{% endif %}</p>
+            {% endif %}
+            {% for f in faces_view %}
+            <div class="border rounded p-2 mb-2 small" style="border-color: var(--border-subtle) !important;">
+                <div class="d-flex justify-content-between flex-wrap gap-1">
+                    <span><strong>Face {{ f.index }}</strong></span>
+                    <span>
+                        {% if f.label == 'POTENTIALLY_MANIPULATED' %}<span class="badge bg-danger">Potentially manipulated</span>
+                        {% elif f.label == 'AUTHENTIC' %}<span class="badge bg-success">No strong indicators</span>
+                        {% else %}<span class="badge bg-warning text-dark">Uncertain</span>{% endif %}
+                        {% if f.disagreement %}<span class="badge bg-warning text-dark">Models disagree</span>{% endif %}
+                    </span>
+                </div>
+                {% if f.domains %}
+                <div class="row g-2 my-1">
+                    {% for dm in f.domains %}
+                    <div class="col-sm-6"><div class="fw-semibold">{{ dm.title }}</div>
+                        {% if dm.state == 'FLAGGED' %}<span class="badge bg-danger">Flagged</span>{% elif dm.state == 'PARTIAL' %}<span class="badge bg-warning text-dark">Partly flagged</span>{% elif dm.state == 'CLEAR' %}<span class="badge bg-success">No indicators</span>{% else %}<span class="badge bg-secondary">No model ran</span>{% endif %}
+                        <span class="text-muted ms-1">{{ dm.flagged }} of {{ dm.models }} relevant models</span></div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if f.specialists %}<div class="text-muted">Headline driven by specialist: <strong>{{ f.specialists|join:", " }}</strong>{% if f.na_votes %} &middot; {{ f.na_votes }} model(s) trained for a different image type are shown as not applicable.{% endif %}</div>{% endif %}
+                <div class="text-muted">{{ f.votes_m }} of {{ f.available }} models flag manipulation{% if f.expected > f.available %} &middot; {{ f.expected }} expected, {{ f.available }} ran{% endif %}.
+                    {% if f.reasons %}Uncertain because {{ f.reasons|join:"; " }}.{% endif %}
+                    {% if f.quality_flags %}Quality: {{ f.quality_flags|join:", " }}.{% endif %}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+
+    {% if faces_view|length > 1 %}
+    <div class="rs-facetabs" role="group" aria-label="Choose a face">
+        {% for f in faces_view %}
+        <button type="button" class="rs-chip" data-face-btn="{{ f.face_index }}" aria-pressed="{% if f.representative or forloop.first and not rep_face %}true{% else %}false{% endif %}">Face {{ f.index }}</button>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="rs-layout">
+        {# ==================== LEFT: PHOTO (layer tabs on top) ==================== #}
+        <section class="rs-card" aria-label="Image under analysis">
+            <p class="rs-card-title">
+                <span>Evidence overlay</span>
+                <span class="text-muted" style="font-weight:400;">{{ upload.original_filename|truncatechars:24 }}</span>
+            </p>
+            {% if faces_view %}
+            <div class="rs-chips rs-chips-top" id="layerChips" role="group" aria-label="Choose what to draw on the image">
+                <button type="button" class="rs-chip" data-layer="regions" aria-pressed="true">Suspicious regions</button>
+                <button type="button" class="rs-chip" data-layer="box" aria-pressed="true">Face box</button>
+                <button type="button" class="rs-chip" data-layer="mask" aria-pressed="false">Pixel mask</button>
+                <button type="button" class="rs-chip" data-layer="heat" aria-pressed="false">Heatmap</button>
+                <button type="button" class="rs-chip" data-layer="none" aria-pressed="false">Original</button>
+            </div>
+            {% endif %}
+            {% if upload.image %}
+            <div class="rs-stage" id="viewer" data-viz="{{ viz_json }}"></div>
+            {% else %}
+            <div class="ds-empty-state" style="padding: 2rem;"><i class="bi bi-image ds-empty-icon"></i><p>Image not available.</p></div>
+            {% endif %}
+            {% if faces_view %}
+            <ol class="rs-legend" id="regionLegend" aria-label="Suspicious regions"></ol>
+            <details class="rs-mini"><summary>About this overlay</summary>
+                <p class="rs-note" id="vizNote">Dashed boxes mark where the models paid most attention. This shows where a model looked; it is a guide, not proof of editing. Face{% if upload.face_count != 1 %}s{% endif %} are cropped and preprocessed for the AI models.</p>
+            </details>
+            {% else %}
+            <div class="ds-no-face mt-3"><i class="bi bi-person-x ds-no-face-icon"></i><p>No face detected in this image.</p></div>
+            {% endif %}
+        </section>
+
+        {# ==================== RIGHT: AI MODEL TABS ==================== #}
+        <div>
+            <div class="rs-section-title" style="margin-top:0;">
+                <h2>AI models</h2>
+                <small>1.00 means the model believes the face is fake</small>
+            </div>
+            {% if faces_view %}
+            {% for f in faces_view %}
+            <div class="rs-facegroup rs-tabsc" data-face="{{ f.face_index }}" {% if rep_face and not f.representative %}hidden{% elif not rep_face and not forloop.first %}hidden{% endif %}>
+                <div class="rs-tabs" role="tablist">
+                    {% for mr in f.model_results %}
+                    <button type="button" class="rs-tab {% if forloop.first %}on{% endif %}" role="tab" data-pane="m{{ f.face_index }}_{{ forloop.counter }}">
+                        <i class="rs-dot {% if mr.status != 'success' %}off{% elif mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}bad{% elif mr.prediction == 'REAL' or mr.prediction == 'ORIGINAL' %}good{% else %}warn{% endif %}"></i>{{ mr.model_name }}
+                    </button>
+                    {% endfor %}
+                </div>
+                {% for mr in f.model_results %}
+                <div class="rs-pane {% if forloop.first %}on{% endif %}" id="m{{ f.face_index }}_{{ forloop.counter }}">
+                    <div class="rs-phead">
+                        <div>
+                            <h3>{{ mr.model_name }}</h3>
+                            <div class="rs-msub">{% if mr.domain_label %}{{ mr.domain_label }}{% else %}{{ mr.model_type }}{% endif %}</div>
+                        </div>
+                        {% if mr.details.status == 'DISABLED' %}<span class="rs-pill mute">Disabled</span>
+                        {% elif mr.status == 'not_configured' or mr.status == 'standby' or mr.prediction == 'STANDBY' %}<span class="rs-pill mute">Standby</span>
+                        {% elif mr.status == 'error' %}<span class="rs-pill warn">Module offline</span>
+                        {% elif mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}<span class="rs-pill bad">Looks fake</span>
+                        {% elif mr.prediction == 'REAL' or mr.prediction == 'ORIGINAL' %}<span class="rs-pill good">Looks real</span>
+                        {% else %}<span class="rs-pill warn">{{ mr.prediction }}</span>{% endif %}
+                    </div>
+                    <div class="rs-pair">
+                        {% if f.crop %}<figure><img src="{{ f.crop }}" alt="Face {{ f.index }} analysed by {{ mr.model_name }}" loading="lazy"><figcaption>Face {{ f.index }}</figcaption></figure>{% endif %}
+                        {% if mr.has_gradcam and mr.gradcam_image %}
+                        <figure><img src="{{ mr.gradcam_image.url }}" alt="Grad-CAM attention map for {{ mr.model_name }}" loading="lazy"><figcaption>Grad-CAM</figcaption></figure>
+                        {% else %}
+                        <figure class="rs-nocam"><span><i class="bi bi-eye-slash"></i>Grad-CAM not available</span></figure>
+                        {% endif %}
+                    </div>
+                    {% if mr.status == 'success' %}
+                    <div class="rs-fscore">
+                        <div class="rs-bar" aria-hidden="true"><span style="width: {{ mr.get_fake_probability_percent }}%; background: {% if mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}var(--danger){% elif mr.prediction == 'REAL' or mr.prediction == 'ORIGINAL' %}var(--success){% else %}var(--warning){% endif %};"></span></div>
+                        <span class="rs-num">{{ mr.fake_probability|floatformat:2 }} / 1.00</span>
+                    </div>
+                    <p class="rs-note" style="margin-top:.25rem;">Raw model score &middot; Not a probability.</p>
+                    {% endif %}
+                    <div class="rs-tabs rs-tabs-sm" role="tablist">
+                        <button type="button" class="rs-tab on" data-pane="m{{ f.face_index }}_{{ forloop.counter }}_w">Why</button>
+                        <button type="button" class="rs-tab" data-pane="m{{ f.face_index }}_{{ forloop.counter }}_t">Technical</button>
+                    </div>
+                    <div class="rs-pane rs-sub on" id="m{{ f.face_index }}_{{ forloop.counter }}_w">
+                        <div class="rs-mtext">
+                            {% if mr.details.status == 'DISABLED' %}
+                                <strong>Disabled in configuration.</strong> This model was switched off by the administrator and did not take part.
+                            {% elif mr.status == 'not_configured' or mr.status == 'standby' or mr.prediction == 'STANDBY' %}
+                                Pipeline initialised &middot; baseline calibration active. This model has no weights installed yet.
+                            {% elif mr.status == 'error' %}
+                                This model could not produce a result for this face.
+                            {% elif mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}
+                                The model's raw score is above its decision threshold, so it votes <strong>fake</strong> for this face.
+                            {% else %}
+                                The model's raw score is below its decision threshold, so it votes <strong>real</strong> for this face.
+                            {% endif %}
+                            {% if mr.has_gradcam and mr.gradcam_image %}Highlighted regions in the attention map are the areas that influenced this model's prediction.{% endif %}
+                            {% if mr.message %}<span class="d-block mt-1"><i class="bi bi-info-circle me-1"></i>{{ mr.message }}</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="rs-pane rs-sub" id="m{{ f.face_index }}_{{ forloop.counter }}_t">
+                        <div class="rs-kv">
+                            {% if mr.status == 'success' %}
+                            <div><span>Raw score</span><b>{{ mr.fake_probability|floatformat:2 }}</b></div>
+                            <div><span>Decision threshold</span><b>{{ mr.details.threshold|default:"0.50"|floatformat:2 }}</b></div>
+                            {% endif %}
+                            <div><span>Version</span><b>{{ mr.details.version|default:"n/a" }}</b></div>
+                            <div><span>Status</span><b>{% if mr.status == 'success' %}Active{% elif mr.details.status == 'DISABLED' %}Disabled{% elif mr.status == 'not_configured' or mr.status == 'standby' %}Calibration standby{% else %}Error{% endif %}</b></div>
+                        </div>
+                        {% if mr.status == 'success' %}<p class="rs-note">Score from 0 to 1; values at or above the threshold indicate manipulation.</p>{% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="ds-empty-state"><i class="bi bi-cpu ds-empty-icon"></i><h3>No model results for Face {{ f.index }}</h3></div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            {% else %}
+            {% for mr in model_results %}
+            <div class="rs-card mb-2 small"><strong>{{ mr.model_name }}</strong> &middot; {% if mr.status == 'success' %}{{ mr.prediction }}{% else %}Unavailable{% endif %}
+                <div class="text-muted">{% if mr.message %}{{ mr.message }}{% else %}No face was found, so the face models did not run.{% endif %}</div></div>
+            {% empty %}
+            <div class="ds-empty-state"><i class="bi bi-cpu ds-empty-icon"></i><h3>No model results</h3></div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    {# ==================== FORENSIC ALGORITHMS (tabs, same layout) ==================== #}
+    <div class="rs-section-title">
+        <h2>Forensic algorithms</h2>
+        <small>8 tests &middot; a higher score means more risk</small>
+    </div>
+    {% if forensic %}
+    <div class="rs-tabsc rs-card" id="forensicGrid">
+        <div class="rs-tabs" role="tablist">
+            {% for c in forensic_cards %}
+            <button type="button" class="rs-tab {% if forloop.first %}on{% endif %}" role="tab" data-pane="fc-{{ c.key }}">
+                <i class="rs-dot {% if c.level == 'HIGH' or c.level == 'INVALID' %}bad{% elif c.level == 'MEDIUM' %}warn{% elif c.level == 'LOW' or c.level == 'VALID' %}good{% else %}off{% endif %}"></i>{{ c.name }}
+            </button>
+            {% endfor %}
+        </div>
+        {% for c in forensic_cards %}
+        <div class="rs-pane {% if forloop.first %}on{% endif %}" id="fc-{{ c.key }}">
+            <div class="rs-phead">
+                <div><h3><i class="bi {{ c.icon }} me-2" aria-hidden="true"></i>{{ c.name }}</h3></div>
+                <span class="rs-pill {% if c.level == 'HIGH' or c.level == 'INVALID' %}bad{% elif c.level == 'MEDIUM' %}warn{% elif c.level == 'LOW' or c.level == 'VALID' %}good{% else %}mute{% endif %}">{{ c.level_text }}</span>
+            </div>
+            <div class="rs-pair lg">
+                {% if upload.image %}<figure><img src="{{ upload.image.url }}" alt="Original image" loading="lazy"><figcaption>Original image</figcaption></figure>{% endif %}
+                {% if c.image %}
+                <figure><img src="{{ c.image }}" alt="{{ c.image_label }}" loading="lazy"><figcaption>{{ c.image_label }}</figcaption></figure>
+                {% else %}
+                <figure class="rs-nocam"><span><i class="bi {{ c.icon }}" aria-hidden="true"></i>{% if c.available %}No visual for this test{% else %}{{ c.level_text }}{% endif %}</span></figure>
+                {% endif %}
+            </div>
+            {% if c.available %}
+            <div class="rs-fscore">
+                <div class="rs-bar" aria-hidden="true"><span style="width: {{ c.score }}%; background: {% if c.level == 'HIGH' %}var(--danger){% elif c.level == 'MEDIUM' %}var(--warning){% else %}var(--success){% endif %};"></span></div>
+                <span class="rs-num">{{ c.score_exact }}/100</span>
+            </div>
+            <p class="rs-note" style="margin-top:.25rem;">Indicator severity (0-100, not a probability).</p>
+            {% endif %}
+            <div class="rs-tabs rs-tabs-sm" role="tablist">
+                <button type="button" class="rs-tab on" data-pane="fc-{{ c.key }}_d">Description</button>
+                <button type="button" class="rs-tab" data-pane="fc-{{ c.key }}_i">Interpretation</button>
+                {% if c.metrics %}<button type="button" class="rs-tab" data-pane="fc-{{ c.key }}_m">Metrics</button>{% endif %}
+            </div>
+            <div class="rs-pane rs-sub on" id="fc-{{ c.key }}_d"><div class="rs-mtext">{{ c.desc }}</div></div>
+            <div class="rs-pane rs-sub" id="fc-{{ c.key }}_i"><div class="rs-mtext">{% if c.interpretation %}{{ c.interpretation }}{% else %}No further interpretation for this test.{% endif %}</div></div>
+            {% if c.metrics %}<div class="rs-pane rs-sub" id="fc-{{ c.key }}_m"><div class="rs-kv">{% for k, v in c.metrics %}<div><span>{{ k }}</span><b>{{ v }}</b></div>{% endfor %}</div></div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {# ---- evidence summary ---- #}
+    <details class="rs-details-card">
+        <summary><span><i class="bi bi-bar-chart-steps me-2"></i>Forensic evidence summary</span>
+            <span><span class="ds-badge {{ forensic.get_risk_display_class }}">{{ forensic.overall_risk }} RISK</span> <i class="bi bi-chevron-down rs-chev ms-2" aria-hidden="true"></i></span></summary>
+        <div>
+            <p style="font-size:.85rem; color: var(--text-secondary); line-height:1.65;">The evidence scores below represent how strongly each analysis module's findings suggest possible manipulation. Higher score = stronger evidence of manipulation. These are <strong>not accuracy percentages</strong> &mdash; they are evidence weight indicators.</p>
+            {% include 'detector/_evidence_bars.html' with forensic=forensic %}
+            <div class="ds-info-box mt-3"><p style="font-size:.85rem; color: var(--text-secondary); margin:0; line-height:1.65;"><i class="bi bi-info-circle me-2" style="color: var(--accent);"></i>{{ forensic.risk_interpretation }}</p></div>
+        </div>
+    </details>
+    {% else %}
+    <div class="ds-empty-state mt-2">
+        <i class="bi bi-microscope ds-empty-icon"></i>
+        <h3>Forensic Analysis Not Available</h3>
+        <p class="text-muted">Forensic modules did not run for this analysis. This may occur for older analyses before this feature was added.</p>
+    </div>
+    {% endif %}
+
+    {# ---- file integrity ---- #}
+    <details class="rs-details-card">
+        <summary><span><i class="bi bi-fingerprint me-2"></i>File integrity</span>
+            <span>{% if upload.sha256_hash %}<span class="badge bg-success">Hash computed</span>{% endif %} <i class="bi bi-chevron-down rs-chev ms-2" aria-hidden="true"></i></span></summary>
+        <div>
+            <p style="font-size:.85rem; color: var(--text-secondary); line-height:1.65;">SHA-256 produces a unique 64-character fingerprint of a file. The same file always gives the same hash and a single changed pixel gives a completely different one. It is used for <strong>file integrity verification and exact duplicate detection</strong> &mdash; it does <strong>NOT</strong> determine whether an image is authentic or manipulated.</p>
+            {% if upload.sha256_hash %}
+            <div class="d-flex align-items-start gap-3 flex-wrap">
+                <div id="sha256Value" class="ds-hash-value flex-grow-1">{{ upload.sha256_hash }}</div>
+                <button class="ds-copy-btn flex-shrink-0" data-copy-target="#sha256Value" title="Copy hash to clipboard"><i class="bi bi-clipboard"></i>Copy</button>
+            </div>
+            <div class="rs-kv mt-3">
+                <div><span>Algorithm</span><b>SHA-256 (256-bit)</b></div>
+                <div><span>File size</span><b>{{ upload.get_file_size_display }}</b></div>
+                {% if forensic %}<div><span>File format</span><b>{{ forensic.meta_format }}</b></div><div><span>Resolution</span><b>{{ forensic.get_meta_resolution }}</b></div>{% endif %}
+            </div>
+            {% else %}
+            <p class="text-muted">SHA-256 hash was not computed for this image.</p>
+            {% endif %}
+        </div>
+    </details>
+
+    {% else %}
+    {# No analysis #}
+    <div class="rs-card text-center">
+        <div class="ds-empty-state">
+            <i class="bi bi-exclamation-circle ds-empty-icon" style="color: var(--warning);"></i>
+            <h3>Analysis Not Available</h3>
+            <p class="text-muted">Status: <strong>{{ upload.processing_status }}</strong>{% if upload.error_message %} — {{ upload.error_message }}{% endif %}</p>
+            <a href="{% url 'upload' %}" class="btn ds-btn-primary mt-2"><i class="bi bi-arrow-clockwise me-1"></i>Try Again</a>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ==================== DISCLAIMER + ACTIONS ==================== #}
+    <div class="ds-disclaimer-box my-4">
+        <i class="bi bi-shield-exclamation ds-disclaimer-icon"></i>
+        <div>
+            <strong>Important Disclaimer</strong>
+            <p class="mb-0 mt-1" style="font-size: 0.875rem; color: var(--text-secondary);">{{ disclaimer }}</p>
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-3">
+        <a href="{% url 'upload' %}" class="btn ds-btn-primary"><i class="bi bi-scan me-1"></i>Analyse Another</a>
+        {% if analysis %}<a href="{% url 'report' upload.pk %}" class="btn ds-btn-outline"><i class="bi bi-file-earmark-text me-1"></i>Full Report</a>{% endif %}
+        <a href="{% url 'history' %}" class="btn ds-btn-outline"><i class="bi bi-clock-history me-1"></i>History</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ csp_nonce }}" src="{% static 'js/face_mask.js' %}"></script>
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+    var f = document.getElementById('deleteForm');
+    if (f) f.addEventListener('submit', function (e) { if (!window.confirm(f.dataset.confirm)) e.preventDefault(); });
+
+    // tabs: a button shows the pane named in data-pane and hides its siblings
+    document.querySelectorAll('.rs-tab').forEach(function (b) {
+        b.addEventListener('click', function () { showTab(b); });
+    });
+    function showTab(b) {
+        var bar = b.parentElement;
+        bar.querySelectorAll('.rs-tab').forEach(function (x) { x.classList.toggle('on', x === b); });
+        var target = document.getElementById(b.dataset.pane);
+        if (!target) return;
+        Array.prototype.forEach.call(target.parentElement.children, function (p) {
+            if (p.classList.contains('rs-pane') && p.classList.contains('rs-sub') === target.classList.contains('rs-sub')) {
+                // only switch sibling panes that belong to the same tab bar
+                var ids = Array.prototype.map.call(bar.querySelectorAll('.rs-tab'), function (x) { return x.dataset.pane; });
+                if (ids.indexOf(p.id) !== -1) p.classList.toggle('on', p === target);
+            }
+        });
+    }
+    // score circles at the top jump to that model's tab
+    document.querySelectorAll('[data-goto]').forEach(function (r) {
+        r.addEventListener('click', function () {
+            var pane = document.getElementById(r.dataset.goto);
+            if (!pane) return;
+            var btn = document.querySelector('.rs-tab[data-pane="' + r.dataset.goto + '"]');
+            if (btn) showTab(btn);
+            pane.scrollIntoView({behavior: 'smooth', block: 'center'});
+        });
+    });
+
+    // ---- face viewer ----
+    var el = document.getElementById('viewer');
+    if (!el) return;
+    var viz;
+    try { viz = JSON.parse(el.dataset.viz || '{}'); } catch (e) { viz = {}; }
+    var faces = viz.faces || [];
+    var active = 0;
+    faces.forEach(function (fc, i) { if (fc.index === {{ rep_face.face_index|default:0 }}) active = i; });
+    var fm = new DSFaceMask(el, {src: viz.src, width: viz.width, height: viz.height, faces: faces, mode: 'result',
+                                 label: 'Uploaded photo with detected face and evidence overlay'});
+    fm.setActive(active);
+    var chips = document.querySelectorAll('#layerChips .rs-chip');
+    var legend = document.getElementById('regionLegend'), note = document.getElementById('vizNote');
+
+    function hasGrid() { return faces[active] && faces[active].grids && faces[active].grids.length && faces[active].crop_geo; }
+    function refreshLegend() {
+        if (!legend) return;
+        legend.innerHTML = '';
+        var on = fm.layers.regions && hasGrid();
+        (on ? fm.getRegions(active) : []).forEach(function (r) {
+            var li = document.createElement('li'); li.innerHTML = '<b></b><span></span>';
+            li.children[0].textContent = r.n; li.children[1].textContent = 'Region ' + r.n + ': ' + r.label + ' (attention ' + r.value.toFixed(2) + ')';
+            legend.appendChild(li);
+        });
+        if (note && !hasGrid()) note.textContent = 'No attention map is available for this face: no model flagged it, or Grad-CAM is unavailable for the models that ran.';
+    }
+    chips.forEach(function (b) {
+        var k = b.dataset.layer;
+        if ((k === 'regions' || k === 'heat') && !hasGrid()) { b.disabled = true; b.setAttribute('aria-pressed', 'false'); b.title = 'No model flagged this face, so there is no attention map to show.'; b.style.opacity = .5; }
+        b.addEventListener('click', function () {
+            if (b.disabled) return;
+            if (k === 'none') { chips.forEach(function (c) { c.setAttribute('aria-pressed', 'false'); }); fm.setLayers({box: false, mask: false, heat: false, regions: false, landmarks: false}); }
+            else { var on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); var o = {}; o[k] = on; if (k === 'box') o.landmarks = on; fm.setLayers(o); }
+            refreshLegend();
+        });
+    });
+    fm.setLayers({regions: hasGrid(), heat: false, mask: false, box: true});
+    chips.forEach(function (b) { if (b.dataset.layer === 'regions' && !hasGrid()) b.setAttribute('aria-pressed', 'false'); });
+    refreshLegend();
+
+    // face tabs: the photo and the model list follow the chosen face
+    document.querySelectorAll('[data-face-btn]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var idx = +b.dataset.faceBtn;
+            document.querySelectorAll('[data-face-btn]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+            document.querySelectorAll('.rs-facegroup').forEach(function (s) { s.hidden = (+s.dataset.face !== idx); });
+            faces.forEach(function (fc, i) { if (fc.index === idx) active = i; });
+            fm.setActive(active); refreshLegend();
+        });
+    });
+});
+</script>
+{% endblock %}
