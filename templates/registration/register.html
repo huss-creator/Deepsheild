@@ -1,52 +1,9 @@
 {% extends 'base.html' %}
 
 {% block title %}Register{% endblock %}
-{% block meta_description %}Create a free DeepShield account to start analysing images for deepfake detection with 6 AI models.{% endblock %}
 
 {% block content %}
 <div class="ds-auth-container">
-
-    {# Decorative rotating cyberpunk face — purely visual, sits behind the form #}
-    <div class="ds-face-hologram" aria-hidden="true">
-        <svg class="ds-face-ring" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="100" cy="100" r="92" fill="none" stroke="#06B6D4" stroke-width="1" stroke-dasharray="2 6" opacity="0.6"/>
-            <circle cx="100" cy="100" r="78" fill="none" stroke="#6366F1" stroke-width="1" stroke-dasharray="10 4" opacity="0.4"/>
-        </svg>
-        <svg class="ds-face-mesh" viewBox="0 0 300 340" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <filter id="dsGlowRegister" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="2.4" result="blur"/>
-                    <feMerge>
-                        <feMergeNode in="blur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                </filter>
-            </defs>
-            <g fill="none" stroke="#7dd3fc" stroke-width="1.1" filter="url(#dsGlowRegister)" opacity="0.85">
-                <path d="M150,20 C90,20 55,70 55,140 C55,200 75,240 95,270 C110,295 130,315 150,320 C170,315 190,295 205,270 C225,240 245,200 245,140 C245,70 210,20 150,20 Z"/>
-                <path d="M150,20 L110,150 M150,20 L190,150"/>
-                <path d="M55,140 L110,150 M55,140 L95,270"/>
-                <path d="M245,140 L190,150 M245,140 L205,270"/>
-                <path d="M95,80 L205,80 M95,80 L55,140 M205,80 L245,140"/>
-                <path d="M110,150 L150,150 M190,150 L150,150"/>
-                <path d="M150,150 L150,205"/>
-                <path d="M140,205 L150,150 L160,205"/>
-                <path d="M150,205 L120,235 M150,205 L180,235"/>
-                <path d="M120,235 C135,248 165,248 180,235"/>
-                <path d="M95,270 L150,320 M205,270 L150,320"/>
-                <ellipse cx="110" cy="150" rx="16" ry="9"/>
-                <ellipse cx="190" cy="150" rx="16" ry="9"/>
-            </g>
-            <g fill="#22d3ee" opacity="0.9">
-                <circle cx="150" cy="20" r="2.6"/><circle cx="55" cy="140" r="2.6"/><circle cx="245" cy="140" r="2.6"/>
-                <circle cx="95" cy="80" r="2.2"/><circle cx="205" cy="80" r="2.2"/>
-                <circle cx="110" cy="150" r="2.6"/><circle cx="190" cy="150" r="2.6"/>
-                <circle cx="150" cy="150" r="2.2"/><circle cx="150" cy="205" r="2.2"/>
-                <circle cx="120" cy="235" r="2.2"/><circle cx="180" cy="235" r="2.2"/>
-                <circle cx="95" cy="270" r="2.6"/><circle cx="205" cy="270" r="2.6"/><circle cx="150" cy="320" r="2.6"/>
-            </g>
-        </svg>
-    </div>
 
     <div class="container">
         <div class="row justify-content-center align-items-start" style="min-height: 80vh; padding: 2rem 0;">
@@ -71,7 +28,7 @@
                     </p>
 
                     <ul class="ds-auth-feature-list mt-4">
-                        <li><i class="bi bi-check-circle-fill"></i> Free access to 6 AI detection models</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Free access to 5 AI detection models</li>
                         <li><i class="bi bi-check-circle-fill"></i> Unlimited image analysis &amp; history</li>
                         <li><i class="bi bi-check-circle-fill"></i> SHA-256 cryptographic fingerprinting</li>
                         <li><i class="bi bi-check-circle-fill"></i> Grad-CAM explainability for AI decisions</li>
@@ -131,6 +88,14 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                        </div>
+
+                        <div class="form-check mb-3">
+                            {{ form.accept_privacy }}
+                            <label class="form-check-label small" for="{{ form.accept_privacy.id_for_label }}">
+                                I have read and accept the <a href="{% url 'privacy' %}" target="_blank" rel="noopener">Privacy Notice</a>.
+                            </label>
+                            {% if form.accept_privacy.errors %}<div class="ds-field-error">{% for e in form.accept_privacy.errors %}<i class="bi bi-exclamation-circle"></i>{{ e }}{% endfor %}</div>{% endif %}
                         </div>
 
                         {# Password with strength indicator #}
@@ -237,7 +202,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 // ============================================================
 // Register page JavaScript
 // 1. Eye toggles for both password fields

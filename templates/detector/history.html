@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Analysis History{% endblock %}
+
+{% block content %}
+<div class="container ds-page-container">
+
+    {# ==================== HEADER ==================== #}
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 ds-reveal">
+        <div>
+            <p style="color: var(--accent); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">
+                <i class="bi bi-clock-history me-1"></i>DeepShield
+            </p>
+            <h1 class="ds-page-title mb-0">Analysis History</h1>
+        </div>
+        <a href="{% url 'upload' %}" class="btn ds-btn-primary">
+            <i class="bi bi-scan"></i>New Analysis
+        </a>
+    </div>
+
+    {# ==================== SEARCH + FILTER ==================== #}
+    <div class="ds-card mb-4 ds-reveal">
+        <div class="ds-card-body">
+            <form method="get" action="{% url 'history' %}" id="historyFilterForm">
+                <div class="row g-3 align-items-end">
+
+                    {# Search box #}
+                    <div class="col-md-5">
+                        <label for="historySearch" class="ds-form-label">Search by Filename</label>
+                        <div class="ds-input-group">
+                            <i class="bi bi-search ds-input-icon"></i>
+                            <input type="text" id="historySearch" name="q"
+                                   class="ds-input ds-input-with-icon"
+                                   placeholder="e.g. photo.jpg"
+                                   value="{{ search_query }}">
+                        </div>
+                    </div>
+
+                    {# Verdict filter #}
+                    <div class="col-md-5">
+                        <label class="ds-form-label">Filter by Verdict</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{% url 'history' %}{% if search_query %}?q={{ search_query }}{% endif %}"
+                               class="btn btn-sm ds-btn-filter {% if not verdict_filter %}active{% endif %}">
+                                All
+                            </a>
+                            <a href="{% url 'history' %}?verdict=LIKELY_AUTHENTIC{% if search_query %}&q={{ search_query }}{% endif %}"
+                               class="btn btn-sm ds-btn-filter-authentic {% if verdict_filter == 'LIKELY_AUTHENTIC' %}active{% endif %}">
+                                <i class="bi bi-check-circle me-1"></i>Authentic
+                            </a>
+                            <a href="{% url 'history' %}?verdict=LIKELY_MANIPULATED{% if search_query %}&q={{ search_query }}{% endif %}"
+                               class="btn btn-sm ds-btn-filter-danger {% if verdict_filter == 'LIKELY_MANIPULATED' %}active{% endif %}">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Manipulated
+                            </a>
+                            <a href="{% url 'history' %}?verdict=UNCERTAIN{% if search_query %}&q={{ search_query }}{% endif %}"
+                               class="btn btn-sm ds-btn-filter-warning {% if verdict_filter == 'UNCERTAIN' %}active{% endif %}">
+                                <i class="bi bi-question-circle me-1"></i>Uncertain
+                            </a>
+                        </div>
+                    </div>
+
+                    {# Submit search #}
+                    <div class="col-md-2">
+                        <button type="submit" class="btn ds-btn-primary w-100">
+                            <i class="bi bi-search"></i>Search
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+
+            {# Active filters display #}
+            {% if search_query or verdict_filter %}
+            <div class="mt-3 d-flex align-items-center gap-2 flex-wrap">
+                <small style="color: var(--text-muted);">Active filters:</small>
+                {% if search_query %}
+                <span class="ds-filter-chip">
+                    <i class="bi bi-search me-1"></i>"{{ search_query }}"
+                    <a href="{% url 'history' %}{% if verdict_filter %}?verdict={{ verdict_filter }}{% endif %}" class="ds-filter-chip-remove"><i class="bi bi-x"></i></a>
+                </span>
+                {% endif %}
+                {% if verdict_filter %}
+                <span class="ds-filter-chip">
+                    <i class="bi bi-funnel me-1"></i>{{ verdict_filter|lower|capfirst }}
+                    <a href="{% url 'history' %}{% if search_query %}?q={{ search_query }}{% endif %}" class="ds-filter-chip-remove"><i class="bi bi-x"></i></a>
+                </span>
+                {% endif %}
+                <a href="{% url 'history' %}" style="font-size: 0.8rem; color: var(--text-muted);">
+                    <i class="bi bi-x-circle me-1"></i>Clear all
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ==================== HISTORY GRID ==================== #}
+    {% if uploads %}
+    <div class="row g-3">
+        {% for upload in uploads %}
+        <div class="col-sm-6 col-lg-4 col-xl-3 ds-reveal">
+            <div class="ds-history-card">
+
+                {# Image thumbnail #}
+                <div class="ds-history-thumb-wrap">
+                    {% if upload.image %}
+                    <img src="{{ upload.image.url }}" alt="Analysis thumbnail" class="ds-history-thumb">
+                    {% else %}
+                    <div class="ds-history-thumb-placeholder"><i class="bi bi-image"></i></div>
+                    {% endif %}
+
+                    {# Result badge overlaid on image #}
+                    <div class="ds-history-badge-overlay">
+                        {% if upload.analysis %}
+                            {% with pred=upload.analysis.final_prediction %}
+                            {% if pred == 'LIKELY_MANIPULATED' %}
+                                <span class="ds-badge ds-badge-manipulated"><i class="bi bi-exclamation-triangle"></i>Manipulated</span>
+                            {% elif pred == 'LIKELY_AUTHENTIC' %}
+                                <span class="ds-badge ds-badge-authentic"><i class="bi bi-check-circle"></i>Authentic</span>
+                            {% else %}
+                                <span class="ds-badge ds-badge-uncertain"><i class="bi bi-question-circle"></i>Uncertain</span>
+                            {% endif %}
+                            {% endwith %}
+                        {% elif upload.processing_status == 'no_face' %}
+                            <span class="ds-badge ds-badge-not-configured">No Face</span>
+                        {% elif upload.processing_status == 'failed' %}
+                            <span class="ds-badge ds-badge-error">Failed</span>
+                        {% else %}
+                            <span class="ds-badge ds-badge-not-configured">Pending</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# Card body #}
+                <div class="ds-history-card-body">
+                    <p class="ds-filename mb-1" title="{{ upload.original_filename }}">
+                        <i class="bi bi-file-image me-1" style="color: var(--accent); font-size: 0.9rem;"></i>
+                        {{ upload.original_filename|truncatechars:22 }}
+                    </p>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small style="color: var(--text-muted);">{{ upload.uploaded_at|date:"M d, Y H:i" }}</small>
+                        {% if upload.analysis %}
+                        <small class="text-muted">{{ upload.analysis.executed_models }} model{{ upload.analysis.executed_models|pluralize }} ran</small>
+                        {% endif %}
+                    </div>
+
+                    {# SHA-256 short display #}
+                    {% if upload.sha256_hash %}
+                    <div class="ds-history-hash" title="{{ upload.sha256_hash }}">
+                        <i class="bi bi-fingerprint me-1"></i>
+                        <code>{{ upload.sha256_hash|truncatechars:18 }}</code>
+                    </div>
+                    {% endif %}
+
+                    {# Action buttons #}
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{% url 'detail' upload.pk %}" class="btn btn-sm ds-btn-primary flex-fill">
+                            <i class="bi bi-eye me-1"></i>View
+                        </a>
+                        {% if upload.analysis %}
+                        <a href="{% url 'report' upload.pk %}" class="btn btn-sm ds-btn-outline" title="Forensic Report">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    {# Empty state #}
+    <div class="ds-empty-state ds-reveal">
+        <i class="bi bi-clock-history ds-empty-icon"></i>
+        {% if search_query or verdict_filter %}
+        <h3>No results found</h3>
+        <p class="text-muted">No analyses match your current filters. <a href="{% url 'history' %}">Clear filters</a></p>
+        {% else %}
+        <h3>No analyses yet</h3>
+        <p class="text-muted">Upload your first image to get started.</p>
+        <a href="{% url 'upload' %}" class="btn ds-btn-primary mt-2"><i class="bi bi-scan me-1"></i>Analyse an Image</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
