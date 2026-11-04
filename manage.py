@@ -12,10 +12,31 @@ Common commands:
 import os
 import sys
 
+# Auto-switch to project virtual environment (.venv) if invoked with system Python
+_project_root = os.path.dirname(os.path.abspath(__file__))
+_venv_python = os.path.join(_project_root, '.venv', 'Scripts', 'python.exe')
+if (
+    os.path.isfile(_venv_python)
+    and os.path.abspath(sys.executable).lower() != os.path.abspath(_venv_python).lower()
+    and os.environ.get('_DEEPSHIELD_VENV_EXEC') != '1'
+):
+    import subprocess
+    os.environ['_DEEPSHIELD_VENV_EXEC'] = '1'
+    sys.exit(subprocess.call([_venv_python] + sys.argv))
+
+_dll_directory_handle = None
+if os.name == 'nt':
+    dll_directory = os.path.join(sys.prefix, 'Scripts')
+    if os.path.isdir(dll_directory):
+        try:
+            _dll_directory_handle = os.add_dll_directory(dll_directory)
+        except Exception:
+            pass
+
 
 def main():
     # Tell Django where our settings file is
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -23,16 +44,9 @@ def main():
             "Couldn't import Django. Make sure it is installed and that you have "
             "activated your virtual environment."
         ) from exc
-    # Auto-apply migrations before starting the server, so a fresh clone never
-    # fails with "no such table: auth_user" (RUN_MAIN avoids running twice
-    # when the auto-reloader restarts the process).
-    if 'runserver' in sys.argv and os.environ.get('RUN_MAIN') != 'true':
-        import django
-        from django.core.management import call_command
-        django.setup()
-        call_command('migrate', interactive=False, verbosity=1)
     execute_from_command_line(sys.argv)
 
 
 if __name__ == '__main__':
     main()
+

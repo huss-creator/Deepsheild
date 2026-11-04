@@ -1,2 +1,3 @@
-# This file marks 'config' as a Python package.
-# Django requires this file to exist here.
+from .celery import app as celery_app
+
+__all__ = ('celery_app',)

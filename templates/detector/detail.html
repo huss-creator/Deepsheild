@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Detailed Analysis{% endblock %}
+
+{% block content %}
+<div class="container ds-page-container">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 ds-reveal">
+        <div>
+            <p style="color: var(--accent); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">
+                <i class="bi bi-shield-fill-check me-1"></i>DeepShield Forensics
+            </p>
+            <h1 class="ds-page-title mb-0">Detailed Forensic View</h1>
+            <small style="color: var(--text-muted);">{{ upload.original_filename }}</small>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if analysis %}<a href="{% url 'report' upload.pk %}" class="btn ds-btn-outline btn-sm"><i class="bi bi-file-earmark-text me-1"></i>Report</a>{% endif %}
+            <a href="{% url 'history' %}" class="btn ds-btn-outline btn-sm"><i class="bi bi-arrow-left me-1"></i>History</a>
+        </div>
+    </div>
+
+    {# Images #}
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 ds-reveal">
+            <div class="ds-card h-100">
+                <div class="ds-card-header"><h2 class="ds-card-title"><i class="bi bi-image"></i>Original Image</h2></div>
+                <div class="ds-card-body text-center">
+                    {% if upload.image %}<img src="{{ upload.image.url }}" alt="Original uploaded image" class="ds-result-image img-fluid">{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 ds-reveal">
+            <div class="ds-card h-100">
+                <div class="ds-card-header">
+                    <h2 class="ds-card-title"><i class="bi bi-person-bounding-box"></i>Detected Face</h2>
+                    {% if upload.face_detected %}<span class="badge bg-success">{{ upload.face_count }} face{% if upload.face_count != 1 %}s{% endif %}</span>{% else %}<span class="badge bg-secondary">Not detected</span>{% endif %}
+                </div>
+                <div class="ds-card-body text-center">
+                    {% if upload.cropped_face %}
+                    <img src="{{ upload.cropped_face.url }}" alt="Cropped face" class="ds-result-image img-fluid">
+                    {% else %}
+                    <div class="ds-no-face"><i class="bi bi-person-x ds-no-face-icon"></i><p>No face detected.</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Verdict #}
+    {% if analysis %}
+    <div class="ds-card mb-4 ds-reveal">
+        <div class="ds-card-header">
+            <h2 class="ds-card-title"><i class="bi bi-award"></i>Final Verdict</h2>
+        </div>
+        <div class="ds-card-body">
+            <div class="row align-items-center g-4">
+                <div class="col-md-7">
+                    {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}
+                    <div class="ds-final-badge ds-final-manipulated"><i class="bi bi-exclamation-triangle-fill"></i>Potentially Manipulated</div>
+                    {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}
+                    <div class="ds-final-badge ds-final-authentic"><i class="bi bi-check-circle-fill"></i>Likely Authentic</div>
+                    {% else %}
+                    <div class="ds-final-badge ds-final-uncertain"><i class="bi bi-question-circle-fill"></i>Uncertain</div>
+                    {% endif %}
+                    <p class="small text-muted mt-3 mb-0">AI scores are uncalibrated model outputs, not probabilities. See the result page for the per-face breakdown.</p>
+                    <div class="ds-explanation mt-3"><i class="bi bi-chat-text me-2" style="color:var(--accent);"></i>{{ analysis.explanation }}</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="ds-vote-grid">
+                        <div class="ds-vote-item"><div class="ds-vote-number" style="color:var(--success);">{{ analysis.authentic_votes }}</div><div class="ds-vote-label">Authentic Votes</div></div>
+                        <div class="ds-vote-item"><div class="ds-vote-number" style="color:var(--danger);">{{ analysis.manipulation_votes }}</div><div class="ds-vote-label">Manipulation Votes</div></div>
+                        <div class="ds-vote-item"><div class="ds-vote-number" style="color:var(--accent);">{{ analysis.executed_models }}</div><div class="ds-vote-label">Models Run</div></div>
+                        <div class="ds-vote-item"><div class="ds-vote-number" style="color:var(--text-muted);">{{ analysis.unavailable_models }}</div><div class="ds-vote-label">Unavailable</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Tabs — same structure as result.html but on detail page #}
+    <div class="ds-tab-container mb-4 ds-reveal">
+        <ul class="ds-tab-nav" role="tablist">
+            <li><button class="ds-tab-btn active" data-tab="dtab-ai"><i class="bi bi-cpu me-1"></i>AI Models</button></li>
+            <li><button class="ds-tab-btn" data-tab="dtab-forensic"><i class="bi bi-microscope me-1"></i>Forensic</button></li>
+            <li><button class="ds-tab-btn" data-tab="dtab-evidence"><i class="bi bi-bar-chart-steps me-1"></i>Evidence</button></li>
+            <li><button class="ds-tab-btn" data-tab="dtab-integrity"><i class="bi bi-fingerprint me-1"></i>File Integrity</button></li>
+        </ul>
+
+        <div class="ds-tab-pane active" id="dtab-ai">
+            <div class="row g-3 mt-2">
+                {% for mr in model_results %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="ds-model-card {% if mr.status == 'not_configured' or mr.status == 'standby' %}ds-model-card-nc{% elif mr.status == 'error' %}ds-model-card-error{% elif mr.prediction in 'FAKE,TAMPERED' %}ds-model-card-fake{% elif mr.prediction in 'REAL,ORIGINAL' %}ds-model-card-real{% else %}ds-model-card-uncertain{% endif %}">
+                        <div class="ds-model-header">
+                            <div>
+                                <h3 class="ds-model-name">{{ mr.model_name }}</h3>
+                                <span class="ds-model-type-badge">{{ mr.model_type }}</span>
+                            </div>
+                            <i class="bi bi-cpu" style="color:var(--accent-2);font-size:1.2rem;flex-shrink:0;"></i>
+                        </div>
+                        <div class="my-3 text-center">
+                            {% if mr.status == 'not_configured' or mr.status == 'standby' or mr.prediction == 'STANDBY' %}
+                                <span class="ds-badge ds-badge-lg" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25);"><i class="bi bi-shield-check"></i>Standby Mode</span>
+                                <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 0;">Pipeline initialized · Baseline calibration active</p>
+                            {% elif mr.status == 'error' %}<span class="ds-badge ds-badge-error ds-badge-lg"><i class="bi bi-x-circle"></i>Module Offline</span>
+                            {% elif mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}<span class="ds-badge ds-badge-manipulated ds-badge-lg"><i class="bi bi-exclamation-triangle"></i>{{ mr.prediction }}</span>
+                            {% elif mr.prediction == 'REAL' or mr.prediction == 'ORIGINAL' %}<span class="ds-badge ds-badge-authentic ds-badge-lg"><i class="bi bi-check-circle"></i>{{ mr.prediction }}</span>
+                            {% else %}<span class="ds-badge ds-badge-uncertain ds-badge-lg"><i class="bi bi-question-circle"></i>{{ mr.prediction }}</span>{% endif %}
+                        </div>
+                        {% if mr.status == 'success' %}
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between mb-1"><small style="color:var(--text-muted);">Model score (uncalibrated)</small><small><strong>{{ mr.fake_probability|floatformat:2 }}</strong></small></div>
+                        </div>
+                        {% endif %}
+                        {% if mr.has_gradcam and mr.gradcam_image %}
+                        <div class="mt-3" style="border-top:1px solid var(--border-subtle);padding-top:0.75rem;">
+                            <p class="ds-gradcam-label"><i class="bi bi-eye me-1"></i>Grad-CAM</p>
+                            <img src="{{ mr.gradcam_image.url }}" alt="Grad-CAM" class="ds-gradcam-img">
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}<div class="col-12 ds-empty-state mt-2"><i class="bi bi-cpu ds-empty-icon"></i><h3>No model results</h3></div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="ds-tab-pane" id="dtab-forensic">
+            {% if forensic %}
+            <div class="row g-4 mt-2">
+                <div class="col-lg-6"><div class="ds-card h-100"><div class="ds-card-header"><h3 class="ds-card-title" style="font-size:1rem;"><i class="bi bi-layers"></i>ELA</h3><span class="ds-badge {{ forensic.get_ela_level_display_class }}">{{ forensic.ela_level }}</span></div><div class="ds-card-body">{% if forensic.ela_image %}<div class="row g-2 mb-2"><div class="col-6"><p class="ds-forensic-img-label">Original</p><img src="{{ upload.image.url }}" class="ds-forensic-img" alt="original"></div><div class="col-6"><p class="ds-forensic-img-label">ELA</p><img src="{{ forensic.ela_image.url }}" class="ds-forensic-img" alt="ELA"></div></div>{% endif %}<p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.65;margin:0;">{{ forensic.ela_interpretation }}</p></div></div></div>
+                <div class="col-lg-6"><div class="ds-card h-100"><div class="ds-card-header"><h3 class="ds-card-title" style="font-size:1rem;"><i class="bi bi-activity"></i>Frequency (FFT)</h3><span class="ds-badge {{ forensic.get_freq_level_display_class }}">{{ forensic.freq_level }}</span></div><div class="ds-card-body">{% if forensic.freq_image %}<div class="row g-2 mb-2"><div class="col-6"><p class="ds-forensic-img-label">Original</p><img src="{{ upload.image.url }}" class="ds-forensic-img" alt="original"></div><div class="col-6"><p class="ds-forensic-img-label">Spectrum</p><img src="{{ forensic.freq_image.url }}" class="ds-forensic-img" alt="freq"></div></div>{% endif %}<p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.65;margin:0;">{{ forensic.freq_interpretation }}</p></div></div></div>
+                <div class="col-lg-6"><div class="ds-card h-100"><div class="ds-card-header"><h3 class="ds-card-title" style="font-size:1rem;"><i class="bi bi-soundwave"></i>Noise Analysis</h3><span class="ds-badge {{ forensic.get_noise_level_display_class }}">{{ forensic.noise_level }}</span></div><div class="ds-card-body">{% if forensic.noise_image %}<div class="row g-2 mb-2"><div class="col-6"><p class="ds-forensic-img-label">Original</p><img src="{{ upload.image.url }}" class="ds-forensic-img" alt="original"></div><div class="col-6"><p class="ds-forensic-img-label">Residual</p><img src="{{ forensic.noise_image.url }}" class="ds-forensic-img" alt="noise"></div></div>{% endif %}<p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.65;margin:0;">{{ forensic.noise_interpretation }}</p></div></div></div>
+                <div class="col-lg-6"><div class="ds-card h-100"><div class="ds-card-header"><h3 class="ds-card-title" style="font-size:1rem;"><i class="bi bi-front"></i>Copy-Move Detection</h3><span class="ds-badge {{ forensic.get_copy_move_level_display_class }}">{{ forensic.copy_move_level }}</span></div><div class="ds-card-body">{% if forensic.copy_move_image %}<div class="mb-2"><p class="ds-forensic-img-label">Matched Keypoints</p><img src="{{ forensic.copy_move_image.url }}" class="ds-forensic-img" style="width:100%;max-height:200px;object-fit:contain;" alt="copy-move"></div>{% endif %}<p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.65;margin:0;">{{ forensic.copy_move_interpretation }}</p></div></div></div>
+                <div class="col-lg-6"><div class="ds-card h-100"><div class="ds-card-header"><h3 class="ds-card-title" style="font-size:1rem;"><i class="bi bi-vector-pen"></i>Face Boundary</h3>{% if forensic.face_boundary_detected %}<span class="ds-badge {{ forensic.get_face_boundary_level_display_class }}">{{ forensic.face_boundary_level }}</span>{% else %}<span class="badge bg-secondary">No Face</span>{% endif %}</div><div class="ds-card-body">{% if forensic.face_boundary_image %}<div class="mb-2"><p class="ds-forensic-img-label">Boundary Zone</p><img src="{{ forensic.face_boundary_image.url }}" class="ds-forensic-img" style="width:100%;max-height:200px;object-fit:contain;" alt="face boundary"></div>{% endif %}<p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.65;margin:0;">{{ forensic.face_boundary_interpretation }}</p></div></div></div>
+                <div class="col-lg-6"><div class="ds-card h-100"><div class="ds-card-header"><h3 class="ds-card-title" style="font-size:1rem;"><i class="bi bi-aspect-ratio"></i>Resampling</h3><span class="ds-badge {{ forensic.get_resampling_level_display_class }}">{{ forensic.resampling_level }}</span></div><div class="ds-card-body">{% if forensic.resampling_image %}<div class="mb-2"><p class="ds-forensic-img-label">Derivative Spectrum</p><img src="{{ forensic.resampling_image.url }}" class="ds-forensic-img" style="width:100%;max-height:200px;object-fit:contain;" alt="resampling"></div>{% endif %}<p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.65;margin:0;">{{ forensic.resampling_interpretation }}</p></div></div></div>
+                <div class="col-lg-6"><div class="ds-card h-100"><div class="ds-card-header"><h3 class="ds-card-title" style="font-size:1rem;"><i class="bi bi-patch-check"></i>C2PA Credentials</h3><span class="ds-badge {{ forensic.get_c2pa_status_display_class }}">{{ forensic.get_c2pa_status_display }}</span></div><div class="ds-card-body"><p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.65;margin:0;">{{ forensic.c2pa_interpretation }}</p></div></div></div>
+                <div class="col-lg-6"><div class="ds-card h-100"><div class="ds-card-header"><h3 class="ds-card-title" style="font-size:1rem;"><i class="bi bi-info-square"></i>Metadata</h3>{% if forensic.meta_has_exif %}<span class="badge bg-success">EXIF Found</span>{% else %}<span class="badge bg-secondary">No EXIF</span>{% endif %}</div><div class="ds-card-body"><div class="row g-2"><div class="col-6"><div class="ds-meta-item"><span class="ds-meta-label">Format</span><span class="ds-meta-value">{{ forensic.meta_format }}</span></div></div><div class="col-6"><div class="ds-meta-item"><span class="ds-meta-label">Resolution</span><span class="ds-meta-value">{{ forensic.get_meta_resolution }}</span></div></div>{% if forensic.meta_software %}<div class="col-12"><div class="ds-meta-item"><span class="ds-meta-label">Software</span><span class="ds-meta-value {% if forensic.meta_is_editing_software %}text-warning{% endif %}">{{ forensic.meta_software }}</span></div></div>{% endif %}</div><p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.65;margin-top:0.75rem;">{{ forensic.meta_note }}</p></div></div></div>
+            </div>
+            {% else %}<div class="ds-empty-state mt-4"><i class="bi bi-microscope ds-empty-icon"></i><h3>Forensic Analysis Not Available</h3></div>{% endif %}
+        </div>
+
+        <div class="ds-tab-pane" id="dtab-evidence">
+            {% if forensic %}
+            <div class="ds-card mt-3">
+                <div class="ds-card-header"><h3 class="ds-card-title"><i class="bi bi-bar-chart-steps"></i>Evidence Summary</h3><span class="ds-badge ds-badge-lg {{ forensic.get_risk_display_class }}">{{ forensic.overall_risk }}</span></div>
+                <div class="ds-card-body">{% include 'detector/_evidence_bars.html' with forensic=forensic %}</div>
+            </div>
+            {% else %}<div class="ds-empty-state mt-4"><i class="bi bi-bar-chart-steps ds-empty-icon"></i><h3>Evidence Summary Not Available</h3></div>{% endif %}
+        </div>
+
+        <div class="ds-tab-pane" id="dtab-integrity">
+            <div class="ds-card mt-3">
+                <div class="ds-card-header"><h3 class="ds-card-title"><i class="bi bi-fingerprint"></i>File Integrity</h3></div>
+                <div class="ds-card-body">
+                    {% if upload.sha256_hash %}
+                    <div class="d-flex align-items-start gap-3 flex-wrap">
+                        <div id="sha256DetailVal" class="ds-hash-value flex-grow-1">{{ upload.sha256_hash }}</div>
+                        <button class="ds-copy-btn flex-shrink-0" data-copy-target="#sha256DetailVal"><i class="bi bi-clipboard"></i>Copy</button>
+                    </div>
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-4"><div class="ds-meta-item"><span class="ds-meta-label">Algorithm</span><span class="ds-meta-value">SHA-256</span></div></div>
+                        {% if forensic %}<div class="col-md-4"><div class="ds-meta-item"><span class="ds-meta-label">Resolution</span><span class="ds-meta-value">{{ forensic.get_meta_resolution }}</span></div></div>{% endif %}
+                        <div class="col-md-4"><div class="ds-meta-item"><span class="ds-meta-label">File Size</span><span class="ds-meta-value">{{ upload.get_file_size_display }}</span></div></div>
+                    </div>
+                    {% else %}<div class="ds-empty-state" style="padding:2rem;"><i class="bi bi-fingerprint ds-empty-icon"></i><p>Hash not available.</p></div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="ds-card ds-reveal"><div class="ds-card-body"><div class="ds-empty-state"><i class="bi bi-exclamation-circle ds-empty-icon" style="color:var(--warning);"></i><h3>Analysis Not Available</h3><p>{{ upload.processing_status }}{% if upload.error_message %} — {{ upload.error_message }}{% endif %}</p></div></div></div>
+    {% endif %}
+
+    <div class="ds-disclaimer-box mb-4 mt-4 ds-reveal">
+        <i class="bi bi-shield-exclamation ds-disclaimer-icon"></i>
+        <div><strong>Important Disclaimer</strong><p class="mb-0 mt-1" style="font-size:0.875rem;color:var(--text-secondary);">{{ disclaimer }}</p></div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-3 ds-reveal">
+        <a href="{% url 'history' %}" class="btn ds-btn-outline"><i class="bi bi-arrow-left me-1"></i>Back to History</a>
+        {% if analysis %}<a href="{% url 'report' upload.pk %}" class="btn ds-btn-outline"><i class="bi bi-file-earmark-text me-1"></i>Full Report</a>{% endif %}
+        <a href="{% url 'upload' %}" class="btn ds-btn-primary"><i class="bi bi-scan me-1"></i>New Analysis</a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+    var tabBtns  = document.querySelectorAll('.ds-tab-btn');
+    var tabPanes = document.querySelectorAll('.ds-tab-pane');
+    function switchTab(targetId) {
+        tabBtns.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===targetId); });
+        tabPanes.forEach(function(p){ p.classList.toggle('active', p.id===targetId); });
+    }
+    tabBtns.forEach(function(btn){ btn.addEventListener('click', function(){ switchTab(btn.getAttribute('data-tab')); }); });
+});
+</script>
+{% endblock %}

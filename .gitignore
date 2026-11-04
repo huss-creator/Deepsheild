@@ -15,6 +15,10 @@ __pycache__/
 
 # Django database (SQLite)
 db.sqlite3
+.secret_key.dev
+.env.*
+!.env.example
+*.sqlite3
 
 # Django collected static files
 staticfiles/
@@ -52,3 +56,9 @@ build/
 
 # Log files
 *.log
+
+# model weights & local model config
+trained_models/*/*
+!trained_models/*/.gitkeep
+trained_models/models.json
+trained_models/ensemble_config.json

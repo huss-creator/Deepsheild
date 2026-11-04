@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Analysing…{% endblock %}
+{% block content %}
+<div class="rs-wrap">
+
+  <div class="rs-head">
+    <div>
+      <p class="rs-eyebrow"><i class="bi bi-shield-fill-check me-1"></i>DeepShield Forensics</p>
+      <h1 class="rs-title">Analysing your image</h1>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span id="elapsed" class="rs-readout" style="margin:0;" aria-live="off">00:00</span>
+      <form method="post" action="{% url 'cancel_job' upload.pk %}" class="m-0">{% csrf_token %}
+        <button class="btn ds-btn-outline btn-sm" type="submit">Cancel analysis</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="rs-layout">
+    {# ---------- left: the photo with the live face mask ---------- #}
+    <section class="rs-card" aria-label="Image under analysis">
+      <p class="rs-card-title"><span>Image under analysis</span><span id="faceCount" class="text-muted">searching…</span></p>
+      <div class="rs-stage" id="stage" data-src="{{ upload.image.url }}"></div>
+      <div class="rs-readout" id="readout" aria-live="polite">Looking for faces…</div>
+    </section>
+
+    {# ---------- right: stages + real processing log ---------- #}
+    <section class="rs-card" aria-label="Processing log">
+      <ol class="visually-hidden" aria-label="Pipeline stages">{% for st in job.stages %}<li data-stage="{{ st }}">{{ st }}</li>{% endfor %}</ol>
+      <div class="rs-stepbar" id="stepbar" aria-hidden="true">
+        <div class="rs-step" data-s="0"><i></i>Upload</div>
+        <div class="rs-step" data-s="1"><i></i>Find face</div>
+        <div class="rs-step" data-s="2"><i></i>AI models</div>
+        <div class="rs-step" data-s="3"><i></i>Forensics</div>
+        <div class="rs-step" data-s="4"><i></i>Verdict</div>
+      </div>
+      <p class="rs-card-title"><span>Processing log</span><span id="liveTag" style="color: var(--accent-2);">live</span></p>
+      <div class="rs-log" id="log" aria-live="polite" role="log"></div>
+      <p class="rs-note">Each line is a real step reported by the analysis worker; nothing is estimated. When every step is done, this log is replaced by the results of each model and forensic test, and you can open any row for its details.</p>
+      <div id="msg" class="visually-hidden" role="status">Status: <span id="status">{{ job.status }}</span></div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ csp_nonce }}" src="{% static 'js/face_mask.js' %}"></script>
+<script nonce="{{ csp_nonce }}">
+(function () {
+  var url = "{% url 'job_status' upload.pk %}", done = "{% url 'result' upload.pk %}";
+  var filename = "{{ upload.original_filename|default:'image'|escapejs }}";
+  var stageEl = document.getElementById('stage');
+  var fm = new DSFaceMask(stageEl, {src: stageEl.dataset.src, mode: 'processing', label: 'Your uploaded photo while it is being analysed'});
+  var start = Date.now(), log = document.getElementById('log'), lastSig = '', finishing = false;
+  var STEP = {QUEUED: 0, VALIDATING: 0, FACE_DETECTION: 1, AI_ANALYSIS: 2, FORENSIC_ANALYSIS: 3, AGGREGATING: 4, REPORT_GENERATION: 4, COMPLETED: 5};
+  var WHAT = {
+    QUEUED: 'Waiting for a free worker to pick up your image.',
+    VALIDATING: 'Checking that the file is a valid image and recording its fingerprint (SHA-256).',
+    FACE_DETECTION: 'Searching the photo for faces and mapping their position.',
+    AI_ANALYSIS: 'Each AI model studies the cropped face for signs of manipulation.',
+    FORENSIC_ANALYSIS: 'Running forensic tests on the whole file: compression, noise, frequency, cloning, boundaries, metadata.',
+    AGGREGATING: 'Combining all model scores and forensic evidence into one decision.',
+    REPORT_GENERATION: 'Writing the report.'
+  };
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  setInterval(function () { var s = Math.floor((Date.now() - start) / 1000); document.getElementById('elapsed').textContent = pad(Math.floor(s / 60)) + ':' + pad(s % 60); }, 500);
+
+  function line(t, level, msg) {
+    var sym = {ok: 'OK', run: '..', warn: '!'}[level] || 'OK';
+    var d = document.createElement('div'); d.className = 'rs-log-line';
+    d.innerHTML = '<span class="rs-log-t"></span><span class="rs-log-s ' + level + '"></span><span class="rs-log-m"></span>';
+    d.children[0].textContent = t; d.children[1].textContent = sym; d.children[2].textContent = msg;
+    return d;
+  }
+  function fmt(t) { var s = Math.max(0, Math.round(t)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+
+  function paint(d) {
+    var idx = STEP[d.status] != null ? STEP[d.status] : 0, live = d.live || {};
+    document.getElementById('status').textContent = d.status;
+    document.querySelectorAll('#stepbar .rs-step').forEach(function (el) {
+      var i = +el.dataset.s; el.className = 'rs-step ' + (i < idx ? 'done' : (i === idx && !d.finished ? 'now' : ''));
+    });
+    fm.setStage(d.status, idx / 5);
+    if (live.faces && live.faces.length) {
+      fm.setFaces(live.faces, live.image);
+      document.getElementById('faceCount').textContent = live.faces.length + ' face' + (live.faces.length > 1 ? 's' : '') + ' found';
+      var f = live.faces[0];
+      document.getElementById('readout').innerHTML = 'FACE 01 · ' + (f.confidence ? Math.round(f.confidence * 100) + '% confidence' : 'detected') +
+        '<br>LANDMARKS · ' + (f.landmarks ? f.landmarks.length + ' / ' + f.landmarks.length : 'not provided by detector') + '<br>STEP · ' + d.status.replace(/_/g, ' ');
+    } else if (live.events && live.events.length && live.faces && !live.faces.length) {
+      document.getElementById('faceCount').textContent = 'no face found';
+      document.getElementById('readout').textContent = 'No face was detected in this photo.';
+    }
+    var sig = JSON.stringify([d.status, (live.events || []).length]);
+    if (sig !== lastSig) {
+      lastSig = sig;
+      log.innerHTML = '';
+      log.appendChild(line('00:00', 'ok', 'Image received: ' + filename));
+      (live.events || []).forEach(function (e) { log.appendChild(line(fmt(e.t), e.level || 'ok', e.msg)); });
+      if (!d.finished) { log.appendChild(line('--:--', 'run', (WHAT[d.status] || 'Working…'))); }
+      var c = document.createElement('div'); c.innerHTML = '<span class="rs-cursor" aria-hidden="true">&gt; _</span>'; log.appendChild(c);
+      log.scrollTop = log.scrollHeight;
+    }
+  }
+
+  function finish() {
+    if (finishing) { return; } finishing = true;
+    document.getElementById('liveTag').textContent = 'finished';
+    fm.setStage('COMPLETED', 1);
+    setTimeout(function () { window.location = done; }, 900);
+  }
+  function poll() {
+    fetch(url, {credentials: 'same-origin'}).then(function (r) { return r.json(); }).then(function (d) {
+      paint(d);
+      if (d.finished) { finish(); } else { setTimeout(poll, 800); }
+    }).catch(function () { setTimeout(poll, 3000); });
+  }
+  poll();
+})();
+</script>
+{% endblock %}

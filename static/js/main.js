@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // This uses IntersectionObserver (modern, no library needed).
     var revealEls = document.querySelectorAll('.ds-reveal');
     if (revealEls.length > 0 && 'IntersectionObserver' in window) {
+        document.documentElement.classList.add('ds-reveal-enabled');
         var revealObserver = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
@@ -74,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }, {
-            threshold: 0.12,        // Trigger when 12% of element is visible
+            threshold: 0,           // Tall result sections may never reach a non-zero visibility ratio.
             rootMargin: '0px 0px -40px 0px'  // Trigger slightly before it's fully on screen
         });
 

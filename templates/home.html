@@ -9,51 +9,53 @@
     <div class="container">
         <div class="row align-items-center g-5">
 
+            {# Left: Headline + CTA #}
             <div class="col-lg-6">
 
+                {# Small badge — PHASE BADGE #}
                 <div class="ds-badge-pill mb-4">
-                    <i class="bi bi-shield-lock-fill"></i>
-                    Secure Auth Module
+                    <i class="bi bi-cpu-fill"></i>
+                    AI-Powered Image Forensics
                 </div>
 
+                {# Main headline #}
                 <h1 class="ds-hero-title">
-                    <span class="ds-glitch" data-text="Login & Registration.">Login &amp; Registration.</span><br>
-                    <span class="ds-highlight">Built the Secure Way.</span>
+                    <span class="ds-glitch" data-text="Detect Deepfakes.">Detect Deepfakes.</span><br>
+                    <span class="ds-highlight">Understand the Evidence.</span>
                 </h1>
 
+                {# Supporting text #}
                 <p class="ds-hero-desc mt-3">
-                    This is the authentication slice of the DeepShield project — the part
-                    being reviewed right now. It runs on Django's built-in
-                    <strong style="color: var(--text-primary);">auth system</strong>:
-                    hashed passwords, CSRF-protected forms, and server-side validation.
+                    DeepShield analyses facial images using multiple AI models to identify
+                    potential manipulation and provide an <strong style="color: var(--text-primary);">explainable forensic assessment</strong>
+                    — complete with per-model scores and SHA-256 integrity verification.
                 </p>
 
+                {# CTA Buttons #}
                 <div class="d-flex flex-wrap gap-3 mt-4">
-                    {% if user.is_authenticated %}
-                        <span class="btn ds-btn-outline btn-lg disabled">
-                            <i class="bi bi-check-circle"></i>Logged in as {{ user.username }}
-                        </span>
-                        <a href="{% url 'dashboard' %}" class="btn ds-btn-primary btn-lg">
-                            <i class="bi bi-speedometer2"></i>Go to Dashboard
-                        </a>
-                    {% else %}
                         <a href="{% url 'register' %}" class="btn ds-btn-primary btn-lg">
                             <i class="bi bi-shield-check"></i>Get Started Free
                         </a>
                         <a href="{% url 'login' %}" class="btn ds-btn-outline btn-lg">
                             <i class="bi bi-box-arrow-in-right"></i>Login
                         </a>
-                    {% endif %}
                 </div>
 
+                {# Trust signals #}
                 <div class="d-flex flex-wrap gap-3 mt-4 ds-disclaimer-small">
-                    <span><i class="bi bi-lock-fill me-1" style="color: var(--success);"></i>Hashed Passwords</span>
-                    <span><i class="bi bi-shield-check me-1" style="color: var(--accent);"></i>CSRF Protected</span>
-                    <span><i class="bi bi-patch-check me-1" style="color: var(--accent-2);"></i>Server-Side Validation</span>
+                    <span><i class="bi bi-lock-fill me-1" style="color: var(--success);"></i>Secure &amp; Private</span>
+                    <span><i class="bi bi-cpu me-1" style="color: var(--accent);"></i>5 AI Models</span>
+                    <span><i class="bi bi-fingerprint me-1" style="color: var(--accent-2);"></i>SHA-256 Integrity</span>
                 </div>
+
+                {# Disclaimer #}
+                <p class="ds-disclaimer-small mt-3">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    Results are AI-based forensic estimates and not legal proof of authenticity.
+                </p>
             </div>
 
-            {# Right: binary-code face — same visual as the full project #}
+            {# Right: binary-code face — the visual centerpiece #}
             <div class="col-lg-6 d-none d-lg-flex justify-content-center">
                 <div class="ds-hero-card" style="width: 100%; max-width: 460px;">
 
@@ -64,30 +66,31 @@
                         // rendering face signature...
                     </p>
 
+                    {# Feature icon grid #}
                     <div class="ds-hero-icon-grid">
                         <div class="ds-hero-icon-item">
-                            <i class="bi bi-key"></i>
-                            <span>Password Hashing</span>
+                            <i class="bi bi-robot"></i>
+                            <span>5 AI Models</span>
+                        </div>
+                        <div class="ds-hero-icon-item">
+                            <i class="bi bi-bar-chart-line"></i>
+                            <span>Model Scores</span>
+                        </div>
+                        <div class="ds-hero-icon-item">
+                            <i class="bi bi-fingerprint"></i>
+                            <span>SHA-256 Hash</span>
+                        </div>
+                        <div class="ds-hero-icon-item">
+                            <i class="bi bi-eye"></i>
+                            <span>Grad-CAM View</span>
                         </div>
                         <div class="ds-hero-icon-item">
                             <i class="bi bi-shield-check"></i>
-                            <span>CSRF Tokens</span>
+                            <span>Ensemble Decision</span>
                         </div>
                         <div class="ds-hero-icon-item">
-                            <i class="bi bi-person-check"></i>
-                            <span>Session Login</span>
-                        </div>
-                        <div class="ds-hero-icon-item">
-                            <i class="bi bi-envelope-check"></i>
-                            <span>Email Validation</span>
-                        </div>
-                        <div class="ds-hero-icon-item">
-                            <i class="bi bi-eye-slash"></i>
-                            <span>Show/Hide Password</span>
-                        </div>
-                        <div class="ds-hero-icon-item">
-                            <i class="bi bi-bar-chart-steps"></i>
-                            <span>Strength Meter</span>
+                            <i class="bi bi-clock-history"></i>
+                            <span>Analysis History</span>
                         </div>
                     </div>
 
@@ -98,14 +101,13 @@
     </div>
 </section>
 
-{# ==================== HOW THE AUTH WORKS ==================== #}
-<section class="ds-section" aria-label="How the auth module works">
+{# ==================== HOW IT WORKS ==================== #}
+<section class="ds-section" id="how-it-works" aria-label="How it works">
     <div class="container">
         <div class="text-center mb-5">
-            <h2 class="ds-section-title">How This Module Works</h2>
+            <h2 class="ds-section-title">How DeepShield Works</h2>
             <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto; font-size: 0.95rem;">
-                Three steps, all backed by Django's own authentication system —
-                no custom password logic was written for this.
+                A three-step forensic pipeline that combines face detection, multi-model AI analysis, and ensemble decision logic.
             </p>
         </div>
         <div class="row g-4">
@@ -113,12 +115,11 @@
             <div class="col-md-4 ds-reveal">
                 <div class="ds-step-card">
                     <div class="ds-step-number">1</div>
-                    <i class="bi bi-person-plus ds-step-icon"></i>
-                    <h3 class="ds-step-title">Register</h3>
+                    <i class="bi bi-cloud-arrow-up ds-step-icon"></i>
+                    <h3 class="ds-step-title">Upload Image</h3>
                     <p class="ds-step-desc">
-                        Django's <code>UserCreationForm</code> validates the username,
-                        checks the password against Django's strength rules, and confirms
-                        it matches on both fields.
+                        Upload a JPG or PNG portrait photo (max 10 MB).
+                        The system validates the file, generates a SHA-256 fingerprint, and detects a human face using OpenCV.
                     </p>
                 </div>
             </div>
@@ -126,12 +127,11 @@
             <div class="col-md-4 ds-reveal">
                 <div class="ds-step-card">
                     <div class="ds-step-number">2</div>
-                    <i class="bi bi-shield-lock ds-step-icon"></i>
-                    <h3 class="ds-step-title">Hash & Store</h3>
+                    <i class="bi bi-cpu ds-step-icon"></i>
+                    <h3 class="ds-step-title">AI Analysis</h3>
                     <p class="ds-step-desc">
-                        On <code>form.save()</code>, Django hashes the password with
-                        PBKDF2-SHA256 and writes the new row to the built-in
-                        <code>auth_user</code> table. Plain text is never stored.
+                        Five independent AI models analyse the detected face simultaneously.
+                        Each model returns its own prediction label and confidence score.
                     </p>
                 </div>
             </div>
@@ -139,16 +139,170 @@
             <div class="col-md-4 ds-reveal">
                 <div class="ds-step-card">
                     <div class="ds-step-number">3</div>
-                    <i class="bi bi-box-arrow-in-right ds-step-icon"></i>
-                    <h3 class="ds-step-title">Authenticate</h3>
+                    <i class="bi bi-file-earmark-bar-graph ds-step-icon"></i>
+                    <h3 class="ds-step-title">Forensic Report</h3>
                     <p class="ds-step-desc">
-                        On login, <code>authenticate()</code> re-hashes the entered
-                        password and compares it to the stored hash. A match starts a
-                        session with <code>login()</code>.
+                        A weighted ensemble decision combines all model votes.
+                        View a full forensic report with per-model results, confidence visualization, and Grad-CAM heatmaps.
                     </p>
                 </div>
             </div>
 
+        </div>
+    </div>
+</section>
+
+{# ==================== MODELS ==================== #}
+<section class="ds-section" id="models" aria-label="AI models">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="ds-section-title">AI Models</h2>
+            <p class="mx-auto" style="max-width: 720px; color: var(--text-secondary);">
+                Five independent detectors look at the cropped face. Each one is trained for a specific kind of manipulation,
+                so the result shows which models ran and what each one said, not one hidden number.
+            </p>
+        </div>
+        <div class="row g-3 justify-content-center">
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-card p-4 rounded-4 h-100">
+                    <h3 class="h6 fw-bold mb-1" style="color: var(--text-primary);">SDXL Detector</h3>
+                    <span class="badge bg-primary bg-opacity-25 mb-2">AI-generated images</span>
+                    <p class="small mb-0" style="color: var(--text-secondary);">Priority model. Specialist for fully AI-generated faces (diffusion generators). Its result counts double in the combined score.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-card p-4 rounded-4 h-100">
+                    <h3 class="h6 fw-bold mb-1" style="color: var(--text-primary);">XceptionNet</h3>
+                    <span class="badge bg-primary bg-opacity-25 mb-2">Face-swap + AI</span>
+                    <p class="small mb-0" style="color: var(--text-secondary);">Depthwise-separable CNN, sensitive to blending seams and texture artefacts.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-card p-4 rounded-4 h-100">
+                    <h3 class="h6 fw-bold mb-1" style="color: var(--text-primary);">EfficientNet-B4</h3>
+                    <span class="badge bg-primary bg-opacity-25 mb-2">Face-swap + AI</span>
+                    <p class="small mb-0" style="color: var(--text-secondary);">Compound-scaled CNN that picks up fine texture artefacts.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-card p-4 rounded-4 h-100">
+                    <h3 class="h6 fw-bold mb-1" style="color: var(--text-primary);">ViT-B/16</h3>
+                    <span class="badge bg-primary bg-opacity-25 mb-2">Face-swap + AI</span>
+                    <p class="small mb-0" style="color: var(--text-secondary);">Vision Transformer that looks at global relationships between image patches.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-card p-4 rounded-4 h-100">
+                    <h3 class="h6 fw-bold mb-1" style="color: var(--text-primary);">FFT/DCT + SVM</h3>
+                    <span class="badge bg-primary bg-opacity-25 mb-2">Face-swap + AI</span>
+                    <p class="small mb-0" style="color: var(--text-secondary);">Classical frequency features with an SVM classifier.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ==================== ALGORITHMS ==================== #}
+<section class="ds-section ds-section-alt" id="algorithms" aria-label="Forensic algorithms">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="ds-section-title">Forensic Algorithms</h2>
+            <p class="mx-auto" style="max-width: 720px; color: var(--text-secondary);">
+                Eight classical checks run on the whole file. They are indicators, not proof, and each one is shown with its own details.
+            </p>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6 col-lg-3 ds-reveal">
+                <div class="ds-feature-item h-100 d-block"><strong style="color: var(--text-primary);">1. Error Level Analysis</strong><br><span class="small" style="color: var(--text-secondary);">Re-compresses the file and shows regions that compress differently from the rest.</span></div>
+            </div>
+            <div class="col-md-6 col-lg-3 ds-reveal">
+                <div class="ds-feature-item h-100 d-block"><strong style="color: var(--text-primary);">2. Frequency analysis</strong><br><span class="small" style="color: var(--text-secondary);">Looks for unusual patterns in the image spectrum left by generators.</span></div>
+            </div>
+            <div class="col-md-6 col-lg-3 ds-reveal">
+                <div class="ds-feature-item h-100 d-block"><strong style="color: var(--text-primary);">3. Noise analysis</strong><br><span class="small" style="color: var(--text-secondary);">Checks whether the sensor noise is consistent across the picture.</span></div>
+            </div>
+            <div class="col-md-6 col-lg-3 ds-reveal">
+                <div class="ds-feature-item h-100 d-block"><strong style="color: var(--text-primary);">4. Copy-move detection</strong><br><span class="small" style="color: var(--text-secondary);">Finds regions that were cloned from another part of the same image.</span></div>
+            </div>
+            <div class="col-md-6 col-lg-3 ds-reveal">
+                <div class="ds-feature-item h-100 d-block"><strong style="color: var(--text-primary);">5. Face boundary</strong><br><span class="small" style="color: var(--text-secondary);">Examines the edge of the face for blending seams.</span></div>
+            </div>
+            <div class="col-md-6 col-lg-3 ds-reveal">
+                <div class="ds-feature-item h-100 d-block"><strong style="color: var(--text-primary);">6. Resampling</strong><br><span class="small" style="color: var(--text-secondary);">Detects traces of resizing or rotation of a pasted region.</span></div>
+            </div>
+            <div class="col-md-6 col-lg-3 ds-reveal">
+                <div class="ds-feature-item h-100 d-block"><strong style="color: var(--text-primary);">7. C2PA credentials</strong><br><span class="small" style="color: var(--text-secondary);">Reads content credentials if the file carries them.</span></div>
+            </div>
+            <div class="col-md-6 col-lg-3 ds-reveal">
+                <div class="ds-feature-item h-100 d-block"><strong style="color: var(--text-primary);">8. EXIF metadata</strong><br><span class="small" style="color: var(--text-secondary);">Reads camera and editing-software fields; missing data is not proof of anything.</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ==================== FINAL CTA ==================== #}
+<section class="ds-section" aria-label="Get started">
+    <div class="container text-center">
+        <h2 class="ds-section-title">Ready to check an image?</h2>
+        <div class="d-flex flex-wrap gap-3 justify-content-center mt-4">
+            <a href="{% url 'register' %}" class="btn ds-btn-primary btn-lg"><i class="bi bi-shield-check"></i>Create free account</a>
+            <a href="{% url 'login' %}" class="btn ds-btn-outline btn-lg"><i class="bi bi-box-arrow-in-right"></i>Login</a>
+        </div>
+    </div>
+</section>
+
+{# ==================== FEATURES ==================== #}
+<section class="ds-section ds-section-alt" id="features" aria-label="Features">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="ds-section-title">System Features</h2>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>Face detection with YuNet</div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>5-model AI ensemble analysis</div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>Per-model raw scores</div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>Ensemble decision (SDXL has priority)</div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>SHA-256 image fingerprinting</div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>Grad-CAM explainability maps</div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>Analysis history per user</div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>Secure user authentication</div>
+            </div>
+            <div class="col-md-6 col-lg-4 ds-reveal">
+                <div class="ds-feature-item"><i class="bi bi-check-circle-fill text-success me-2"></i>Academic forensic disclaimer</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ==================== DISCLAIMER BANNER ==================== #}
+<section class="ds-disclaimer-banner" aria-label="Academic disclaimer">
+    <div class="container">
+        <div class="ds-disclaimer-box">
+            <i class="bi bi-shield-exclamation ds-disclaimer-icon"></i>
+            <div>
+                <strong>Academic Research Disclaimer</strong>
+                <p class="mb-0 mt-1" style="color: var(--text-secondary); font-size: 0.9rem;">
+                    DeepShield provides AI-based forensic estimates only. Results are not
+                    a legal proof of image authenticity or manipulation. Detection accuracy
+                    depends on training data and may not cover all manipulation techniques.
+                    This system is designed for academic research and demonstration purposes.
+                </p>
+            </div>
         </div>
     </div>
 </section>
