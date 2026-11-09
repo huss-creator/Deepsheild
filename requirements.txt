@@ -11,14 +11,14 @@ numpy>=2.0
 Pillow>=10.4
 opencv-python-headless>=4.10
 scipy>=1.13
-scikit-learn>=1.5
+scikit-learn==1.6.1
 joblib>=1.4
 onnxruntime>=1.19
 onnx>=1.16
+torch>=2.4
+torchvision>=0.19
+timm>=1.0
+onnx2torch>=1.5
+c2pa-python>=0.38
 prometheus-client>=0.20
 argon2-cffi>=23.1
-
-# Optional: Grad-CAM heat-maps and PyTorch models (install the build that matches your machine)
-#   pip install torch torchvision timm onnx2torch
-# Optional: real C2PA verification
-#   pip install c2pa-python

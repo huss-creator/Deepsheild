@@ -15,12 +15,14 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
-Open http://127.0.0.1:8000/ (redirects to `/public/`).
-Optional (Grad-CAM): `pip install torch torchvision timm onnx2torch`.
+Open http://127.0.0.1:8000/. Visitors see the public landing page; signed-in users
+start at their analysis list. The required packages for model inference and Grad-CAM
+are installed by `pip install -r requirements.txt`.
 
 ## URLs
 - `/public/` landing (dark only), `/public/login`, `/public/register`, `/public/limitations`
-- `/auth/upload`, `/auth/history`, `/auth/result/<id>` ... (after login; dark + light theme)
+- `/auth/analysis/` analysis list, `/auth/upload/` new analysis, `/auth/analysis/<id>/` result
+  (after login; dark + light theme)
 
 ## Folders
 ```

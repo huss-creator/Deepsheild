@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Analysis History{% endblock %}
+{% block title %}My Analyses{% endblock %}
 
 {% block content %}
 <div class="container ds-page-container">
@@ -9,9 +9,9 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 ds-reveal">
         <div>
             <p style="color: var(--accent); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">
-                <i class="bi bi-clock-history me-1"></i>DeepShield
+                <i class="bi bi-collection me-1"></i>DeepShield
             </p>
-            <h1 class="ds-page-title mb-0">Analysis History</h1>
+            <h1 class="ds-page-title mb-0">My Analyses</h1>
         </div>
         <a href="{% url 'upload' %}" class="btn ds-btn-primary">
             <i class="bi bi-scan"></i>New Analysis
@@ -154,7 +154,7 @@
 
                     {# Action buttons #}
                     <div class="d-flex gap-2 mt-3">
-                        <a href="{% url 'detail' upload.pk %}" class="btn btn-sm ds-btn-primary flex-fill">
+                        <a href="{% url 'result' upload.pk %}" class="btn btn-sm ds-btn-primary flex-fill">
                             <i class="bi bi-eye me-1"></i>View
                         </a>
                         {% if upload.analysis %}

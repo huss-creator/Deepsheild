@@ -276,7 +276,7 @@ class AuthHardeningTests(TempMediaTestCase):
             self.client.logout()
             resp = self._login(next=evil)
             self.assertEqual(resp.status_code, 302)
-            self.assertEqual(resp['Location'], reverse('upload'), evil)
+            self.assertEqual(resp['Location'], reverse('history'), evil)
 
     def test_safe_next_is_honoured(self):
         resp = self._login(next='/auth/history/')

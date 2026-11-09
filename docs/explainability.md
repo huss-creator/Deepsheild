@@ -20,10 +20,10 @@ Grad-CAM is not mathematically applicable to a non-differentiable feature/SVM pi
 
 ## Setup (once, on the machine that runs the site)
 ```bash
-pip install torch torchvision timm onnx2torch            # torch (CPU build is enough), onnx2torch, onnx
+pip install -r requirements.txt                           # includes CPU-capable Grad-CAM dependencies
 python manage.py check_models
 ```
-That is all. The first heat-map after a restart takes a few seconds longer (conversion; ViT ~5-10 s); set `AI_MODEL_TIMEOUT=60`.
+The first heat-map after a restart takes a few seconds longer (conversion; ViT ~5-10 s); set `AI_MODEL_TIMEOUT=60`.
 Optional: if you do have the training notebooks' `*_state_dict.pth`, `python manage.py attach_explain key=path.pth ...` makes the
 explanation use those weights instead (SHA-256 pinned + parity checked).
 

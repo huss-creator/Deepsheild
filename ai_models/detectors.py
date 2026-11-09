@@ -231,8 +231,7 @@ class OnnxDetector(BaseDetector):
 # ------------------------------------------------------------------ PyTorch
 class TorchDetector(BaseDetector):
     """TorchScript (.pt) or a plain state_dict for timm/torchvision architectures.
-    Full-model pickles are NOT accepted (arbitrary code execution on load).
-    NOTE: implemented to spec but not executed in the development sandbox (no torch)."""
+    Full-model pickles are NOT accepted (arbitrary code execution on load)."""
     layout = 'NCHW'
 
     _TIMM_NAMES = {'xception': 'legacy_xception', 'efficientnet_b4': 'efficientnet_b4',

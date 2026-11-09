@@ -51,7 +51,7 @@ def home_view(request):
     This page is visible to everyone (no login required).
     """
     if request.user.is_authenticated:
-        return redirect('upload')          # signed-in users go straight to the Analyse page
+        return redirect('history')
     return render(request, 'home.html')
 
 
@@ -68,7 +68,7 @@ def register_view(request):
 
     # If user is already logged in, send them to the Analyse page
     if request.user.is_authenticated:
-        return redirect('upload')
+        return redirect('history')
 
     if request.method == 'POST':
         if not ratelimit.allow('register', ratelimit.client_ip(request)):
@@ -82,7 +82,7 @@ def register_view(request):
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             audit.audit(audit.LOGIN, request, user=user, channel='web')
             messages.success(request, f"Welcome, {user.username}! Your account is ready.")
-            return redirect('upload')
+            return redirect('history')
         # If form has errors, fall through to re-render with error messages
     else:
         # GET request — show an empty form
@@ -103,7 +103,7 @@ def login_view(request):
     """
 
     if request.user.is_authenticated:
-        return redirect('upload')
+        return redirect('history')
 
     next_url = request.POST.get('next') or request.GET.get('next') or ''
 
@@ -127,7 +127,7 @@ def login_view(request):
                     next_url, allowed_hosts={request.get_host()},
                     require_https=request.is_secure()):
                 next_url = ''
-            return redirect(next_url or 'upload')
+            return redirect(next_url or 'history')
         audit.audit(audit.LOGIN_FAILED, request, success=False, channel='web', username_hash=audit.hash_identifier(username))
         ratelimit.hit('login_fail', pair_id)
         ratelimit.hit('login_fail_ip', ip_id)
@@ -569,7 +569,7 @@ class ThrottledPasswordResetView(auth_views.PasswordResetView):
     template_name = 'registration/password_reset_form.html'
     email_template_name = 'registration/password_reset_email.txt'
     subject_template_name = 'registration/password_reset_subject.txt'
-    success_url = '/password-reset/done/'
+    success_url = '/public/password-reset/done/'
 
     def post(self, request, *args, **kwargs):
         if not ratelimit.allow('password_reset', ratelimit.client_ip(request)):
@@ -698,5 +698,5 @@ def limitations_view(request):
 
 
 def root_view(request):
-    """/ sends signed-in users to the Analyse page and visitors to the public landing page."""
-    return redirect('upload' if request.user.is_authenticated else 'home')
+    """/ sends signed-in users to their analyses and visitors to the public landing page."""
+    return redirect('history' if request.user.is_authenticated else 'home')

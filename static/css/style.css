@@ -362,6 +362,88 @@ a:hover {
     flex-shrink: 0;
 }
 
+.ds-profile-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.3rem 0.55rem;
+    color: var(--text-primary);
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.ds-profile-toggle::after {
+    color: var(--text-muted);
+}
+
+.ds-profile-toggle:hover,
+.ds-profile-toggle[aria-expanded="true"] {
+    background: var(--accent-dim);
+    border-color: var(--border-accent);
+}
+
+.ds-profile-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.ds-profile-menu {
+    min-width: 240px;
+    padding: 0.45rem;
+    color: var(--text-primary);
+    background: var(--bg-card-elevated);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-elevated);
+}
+
+.ds-profile-summary {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.65rem 0.75rem;
+    overflow: hidden;
+}
+
+.ds-profile-summary span {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ds-profile-menu .dropdown-item {
+    padding: 0.55rem 0.75rem;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+}
+
+.ds-profile-menu .dropdown-item:hover,
+.ds-profile-menu .dropdown-item:focus {
+    color: var(--text-primary);
+    background: var(--accent-dim);
+}
+
+.ds-profile-menu .dropdown-divider {
+    border-color: var(--border-subtle);
+}
+
+.ds-profile-menu .ds-profile-logout {
+    width: 100%;
+    text-align: left;
+    color: #FCA5A5;
+}
+
+.ds-profile-menu .ds-profile-logout:hover,
+.ds-profile-menu .ds-profile-logout:focus {
+    color: #ffffff;
+    background: var(--danger-dim);
+}
+
 /* Bootstrap hamburger override */
 .navbar-toggler {
     border-color: var(--border-default) !important;
@@ -615,8 +697,8 @@ a:hover {
    ============================================================ */
 
 .ds-page-container {
-    padding: 2.5rem 1rem;
-    max-width: 1200px;
+    padding: 2.5rem calc(var(--bs-gutter-x, 1.5rem) * 0.5);
+    max-width: 1320px;
 }
 
 .ds-page-title {
@@ -3381,7 +3463,7 @@ body[data-theme="light"] {
    Result + processing screens (workspace layout)
    Uses the theme variables, so the dark and light themes both work.
    ========================================================================== */
-.rs-wrap { max-width: 1320px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.rs-wrap { max-width: 1320px; margin: 0 auto; padding: 1.5rem calc(var(--bs-gutter-x, 1.5rem) * 0.5) 3rem; }
 .rs-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; margin-bottom: 1.25rem; }
 .rs-eyebrow { color: var(--accent); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 .15rem; }
 .rs-title { font-size: 1.5rem; margin: 0; }

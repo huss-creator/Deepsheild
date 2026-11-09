@@ -348,7 +348,7 @@ class WebJobTests(JobTestCase):
         self.assertNotIn('%', main)                  # no progress percentages in the page content
         st = self.client.get(f'/auth/processing/{rec.pk}/status/').json()
         self.assertEqual((st['status'], st['finished'], st['stage_total']), ('QUEUED', False, 8))
-        self.assertRedirects(self.client.get(f'/auth/result/{rec.pk}/'), f'/auth/processing/{rec.pk}/')   # result waits for the job
+        self.assertRedirects(self.client.get(f'/auth/analysis/{rec.pk}/'), f'/auth/processing/{rec.pk}/')   # result waits for the job
 
     def test_processing_pages_are_owner_only_and_finish_to_result(self):
         rec = self.submit_queued()
@@ -359,8 +359,8 @@ class WebJobTests(JobTestCase):
         self.client.login(username='alice', password=PW)
         with self.faces_patch(0):
             jobs.run_job(rec.job.pk)
-        self.assertRedirects(self.client.get(f'/auth/processing/{rec.pk}/'), f'/auth/result/{rec.pk}/')
-        self.assertEqual(self.client.get(f'/auth/result/{rec.pk}/').status_code, 200)
+        self.assertRedirects(self.client.get(f'/auth/processing/{rec.pk}/'), f'/auth/analysis/{rec.pk}/')
+        self.assertEqual(self.client.get(f'/auth/analysis/{rec.pk}/').status_code, 200)
 
     def test_cancel_from_web_requires_post_and_csrf(self):
         rec = self.submit_queued()
@@ -376,7 +376,7 @@ class WebJobTests(JobTestCase):
     def test_legacy_uploads_without_a_job_still_render(self):
         rec = self.quick_upload(self.alice)[0]
         self.client.login(username='alice', password=PW)
-        self.assertEqual(self.client.get(f'/auth/result/{rec.pk}/').status_code, 200)
+        self.assertEqual(self.client.get(f'/auth/analysis/{rec.pk}/').status_code, 200)
 
 
 class WorkerConfigurationTests(JobTestCase):
