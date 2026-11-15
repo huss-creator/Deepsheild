@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     {# DeepShield premium theme CSS #}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261109">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261115">
     <script nonce="{{ csp_nonce }}" src="{% static 'js/theme.js' %}?v=20261103"></script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath fill=%27%236366F1%27 d=%27M8 0l6 2v5c0 4-3 7-6 9-3-2-6-5-6-9V2z%27/%3E%3C/svg%3E">
 
@@ -52,23 +52,34 @@
                         </li>
                         <li class="nav-item dropdown ms-lg-2">
                             <button class="ds-profile-toggle dropdown-toggle" type="button" id="profileMenu"
-                                    data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open account menu">
+                                    data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true"
+                                    aria-label="Open account menu for {{ user.username }}">
                                 <span class="ds-nav-avatar" aria-hidden="true">{{ user.username|first|upper }}</span>
-                                <span class="d-lg-none">{{ user.username }}</span>
+                                <span class="ds-profile-name d-none d-md-inline">{{ user.username }}</span>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end ds-profile-menu" aria-labelledby="profileMenu">
-                                <div class="ds-profile-summary">
-                                    <strong>{{ user.username }}</strong>
-                                    <span>{{ user.email|default:"No email address" }}</span>
+                                <div class="ds-profile-heading">
+                                    <span class="ds-profile-avatar" aria-hidden="true">{{ user.username|first|upper }}</span>
+                                    <div class="ds-profile-identity">
+                                        <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                        <span>@{{ user.username }}</span>
+                                        {% if user.email %}<small>{{ user.email }}</small>{% endif %}
+                                    </div>
                                 </div>
-                                <a class="dropdown-item" href="{% url 'account' %}">
-                                    <i class="bi bi-person-gear me-2"></i>Account &amp; data
+                                <a class="dropdown-item ds-profile-action" href="{% url 'account' %}">
+                                    <span class="ds-profile-action-icon"><i class="bi bi-person-gear"></i></span>
+                                    <span class="ds-profile-action-copy">
+                                        <strong>Account settings</strong>
+                                        <small>Profile, privacy and data</small>
+                                    </span>
+                                    <i class="bi bi-chevron-right ds-profile-action-chevron" aria-hidden="true"></i>
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <form method="post" action="{% url 'logout' %}" class="m-0">
                                     {% csrf_token %}
-                                    <button type="submit" class="dropdown-item ds-profile-logout">
-                                        <i class="bi bi-box-arrow-right me-2"></i>Log out
+                                    <button type="submit" class="dropdown-item ds-profile-action ds-profile-logout">
+                                        <span class="ds-profile-action-icon"><i class="bi bi-box-arrow-right"></i></span>
+                                        <span class="ds-profile-action-copy"><strong>Sign out</strong></span>
                                     </button>
                                 </form>
                             </div>

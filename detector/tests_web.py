@@ -119,8 +119,8 @@ class CSPTests(ApiTestCase):
         for kept in ('/auth/upload/', '/auth/analysis/'):
             self.assertIn(f'href="{kept}"', nav)
         self.assertIn('My Analyses', nav)
-        self.assertIn('Account &amp; data', nav)
-        self.assertIn('Log out', nav)
+        self.assertIn('Account settings', nav)
+        self.assertIn('Sign out', nav)
         self.assertIn('profileMenu', nav)
         self.assertIn('data-bs-toggle="dropdown"', nav)
         self.assertNotIn('ds-btn-logout', nav)
