@@ -151,16 +151,21 @@ def run_ai_analysis(image_path, faces_dir, heatmaps_dir, processed_dir=None,
                 from detector import metrics
                 metrics.record_model_failure(d.spec.key)
             outputs.append(out)
-            emit('model', {'face': face.index, 'key': d.spec.key, 'name': d.spec.display_name,
+            emit('model', {'face': face.index, 'face_count': len(faces),
+                           'key': d.spec.key, 'name': d.spec.display_name,
                            'status': out.status, 'ms': _ms(t1)})
             if (settings.AI_EXPLAIN_ENABLED and out.status == AVAILABLE
                     and face.index < settings.AI_EXPLAIN_MAX_FACES):
+                t1 = time.perf_counter()
                 try:
-                    explanations[d.spec.key] = run_with_timeout(
-                        lambda d=d, crop=crop: d.explain(crop, heatmaps_dir), settings.AI_MODEL_TIMEOUT)
+                    explanations[d.spec.key] = d.explain(crop, heatmaps_dir)
                 except Exception:
+                    logger.exception('explanation failed for %s', d.spec.key)
                     explanations[d.spec.key] = {'available': False, 'method': None,
                                                 'reason': 'Explanation failed or timed out.'}
+                timings.setdefault('explanations_ms', {})
+                timings['explanations_ms'][d.spec.key] = (
+                    timings['explanations_ms'].get(d.spec.key, 0.0) + _ms(t1))
         t1 = time.perf_counter()
         fe = ensemble.combine(outputs, cfg, flags, expected_models=expected_models)
         timings['ensemble_ms'] = timings.get('ensemble_ms', 0.0) + _ms(t1)

@@ -222,7 +222,7 @@ MODEL_REQUIRE_CHECKSUM = env_bool('MODEL_REQUIRE_CHECKSUM', False)
 DEVICE = env_str('DEVICE', 'auto')                    # auto | cuda | cpu
 AI_MODEL_TIMEOUT = env_int('AI_MODEL_TIMEOUT', 30)    # seconds per model per face
 AI_EXPLAIN_ENABLED = env_bool('AI_EXPLAIN_ENABLED', True)
-AI_EXPLAIN_MAX_FACES = env_int('AI_EXPLAIN_MAX_FACES', 3)
+AI_EXPLAIN_MAX_FACES = env_int('AI_EXPLAIN_MAX_FACES', 1)
 
 # Face detection / alignment. 'haar' = OpenCV Haar cascade (previous behaviour);
 # 'yunet' = OpenCV YuNet (needs YUNET_MODEL_PATH; gives confidence + 5 landmarks
@@ -356,4 +356,3 @@ AUDIT_LOG_RETENTION_DAYS = env_int('AUDIT_LOG_RETENTION_DAYS', 365)
 # ------------------------------------------------------------ observability
 # /metrics requires "Authorization: Bearer <METRICS_TOKEN>" (or a staff session). Empty = disabled.
 METRICS_TOKEN = env_str('METRICS_TOKEN')
-

@@ -172,7 +172,7 @@ class YuNetDetector:
 
     # Long side of the picture YuNet looks at. Big photos are shrunk (never enlarged); if nothing is
     # found a second, smaller pass helps with very large faces. Boxes are mapped back to full size.
-    WORK_SIDES = (960, 480)
+    WORK_SIDES = (720, 480)
 
     def _net(self):
         net = _YUNET.get(self._path)
