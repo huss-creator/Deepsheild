@@ -10,6 +10,7 @@ The url *names* (home, login, upload, result ...) are what templates use with {%
 
 from django.contrib.auth import views as auth_views
 from django.urls import path
+from django.views.generic import RedirectView
 
 from detector import views
 
@@ -31,13 +32,30 @@ public_patterns = [
 
 auth_patterns = [
     path('logout/', views.logout_view, name='logout'),
+
     path('upload/', views.upload_view, name='upload'),
+    path('analyze/', views.upload_view, name='analyze'),
+
+    path('analysis/', views.history_view, name='history'),
+    path('analysis/<int:pk>/', views.result_view, name='result'),
+
+    path('dashboard/', RedirectView.as_view(
+        pattern_name='history', permanent=True
+    ), name='dashboard'),
+
+    path('history/', RedirectView.as_view(
+        pattern_name='history', permanent=True, query_string=True
+    ), name='history_legacy'),
+
     path('processing/<int:pk>/', views.processing_view, name='processing'),
     path('processing/<int:pk>/status/', views.job_status_view, name='job_status'),
     path('processing/<int:pk>/cancel/', views.cancel_job_view, name='cancel_job'),
-    path('result/<int:pk>/', views.result_view, name='result'),
+
     path('result/<int:pk>/delete/', views.delete_analysis_view, name='delete_analysis'),
-    path('history/', views.history_view, name='history'),
+    path('result/<int:pk>/', RedirectView.as_view(
+        pattern_name='result', permanent=True
+    ), name='result_legacy'),
+
     path('detail/<int:pk>/', views.detail_view, name='detail'),
     path('report/<int:pk>/', views.report_view, name='report'),
     path('account/', views.account_view, name='account'),
