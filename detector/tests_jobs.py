@@ -103,6 +103,19 @@ class StageTests(JobTestCase):
         r = self.call('get', f'/analyses/{rec.public_id}/status/', self.bob)
         self.assertEqual((r.status_code, r.json()['error']['code']), (404, 'NOT_FOUND'))
         self.assertTrue(AuditLog.objects.filter(action='access_denied', user=self.bob).exists())
+    def test_live_model_events_identify_the_face(self):
+        rec = self.submit_queued()
+        jobs.push_live(rec.job.pk, 'model', {
+            'face': 1,
+            'face_count': 2,
+            'name': 'ViT-B/16',
+            'status': 'AVAILABLE'
+        })
+        rec.job.refresh_from_db()
+        self.assertEqual(
+            rec.job.live['events'][-1]['msg'],
+            'ViT-B/16 (face 2/2) finished'
+        )
 
 
 class CancellationTests(JobTestCase):
@@ -355,7 +368,7 @@ class WebJobTests(JobTestCase):
         self.assertIn('automatically', page)
         st = self.client.get(f'/auth/processing/{rec.pk}/status/').json()
         self.assertEqual((st['status'], st['finished'], st['stage_total']), ('QUEUED', False, 8))
-        self.assertRedirects(self.client.get(f'/auth/result/{rec.pk}/'), f'/auth/processing/{rec.pk}/')   # result waits for the job
+        self.assertRedirects(self.client.get(f'/auth/analysis/{rec.pk}/'), f'/auth/processing/{rec.pk}/')   # result waits for the job
 
     def test_upload_progress_does_not_claim_unconfirmed_steps_are_done(self):
         self.client.force_login(self.alice)
@@ -375,8 +388,8 @@ class WebJobTests(JobTestCase):
         self.client.login(username='alice', password=PW)
         with self.faces_patch(0):
             jobs.run_job(rec.job.pk)
-        self.assertRedirects(self.client.get(f'/auth/processing/{rec.pk}/'), f'/auth/result/{rec.pk}/')
-        self.assertEqual(self.client.get(f'/auth/result/{rec.pk}/').status_code, 200)
+        self.assertRedirects(self.client.get(f'/auth/processing/{rec.pk}/'), f'/auth/analysis/{rec.pk}/')
+        self.assertEqual(self.client.get(f'/auth/analysis/{rec.pk}/').status_code, 200)
 
     def test_cancel_from_web_requires_post_and_csrf(self):
         rec = self.submit_queued()
@@ -392,7 +405,7 @@ class WebJobTests(JobTestCase):
     def test_legacy_uploads_without_a_job_still_render(self):
         rec = self.quick_upload(self.alice)[0]
         self.client.login(username='alice', password=PW)
-        self.assertEqual(self.client.get(f'/auth/result/{rec.pk}/').status_code, 200)
+        self.assertEqual(self.client.get(f'/auth/analysis/{rec.pk}/').status_code, 200)
 
 
 class WorkerConfigurationTests(JobTestCase):
