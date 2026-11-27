@@ -170,7 +170,7 @@ STORAGES = {
 }
 
 # -------------------------------------------------------------------- auth
-LOGIN_REDIRECT_URL = 'upload'
+LOGIN_REDIRECT_URL = 'history'
 LOGOUT_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
 PASSWORD_RESET_TIMEOUT = 60 * 60   # reset links valid for 1 hour

@@ -29,6 +29,85 @@ class ThemeToggleTests(ApiTestCase):
         self.assertLess(html.index(toggle), html.index(nav))
         self.assertNotIn('data-lock-theme', html)
 
+    def test_auth_forms_retain_their_card_and_submission_controls(self):
+        login = self.client.get(reverse('login')).content.decode()
+        register = self.client.get(reverse('register')).content.decode()
+        self.assertIn('class="ds-auth-card"', login)
+        self.assertIn('id="loginForm"', login)
+        self.assertIn('class="ds-auth-card"', register)
+        self.assertIn('id="registerForm"', register)
+
+    def test_upload_page_keeps_file_and_submit_controls_in_landscape_layout(self):
+        self.client.force_login(self.alice)
+        html = self.client.get(reverse('upload')).content.decode()
+        self.assertIn('ds-main--upload', html)
+        self.assertIn('class="ds-upload-form"', html)
+        self.assertIn('id="dropzone"', html)
+        self.assertIn('id="imageUpload"', html)
+        self.assertIn('id="submitBtn"', html)
+        self.assertIn('id="scanningState"', html)
+        self.assertIn('What happens after you upload?', html)
+
+
+class PublicNavigationTests(ApiTestCase):
+    def test_public_nav_matches_landing_section_order(self):
+        html = self.client.get(reverse('home')).content.decode()
+        nav = html[:html.index('</nav>')]
+        section_links = (
+            f'href="{reverse("home")}#how-it-works"',
+            f'href="{reverse("home")}#models"',
+            f'href="{reverse("home")}#algorithms"',
+        )
+        positions = [nav.index(link) for link in section_links]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_homepage_redesign_preserves_copy_routes_and_face_scan(self):
+        html = self.client.get(reverse('home')).content.decode()
+        for content in (
+            'Detect Deepfakes.',
+            'Understand the Evidence.',
+            'AI-Powered Image Forensics',
+            'available model outputs with forensic checks',
+            'not proof that an image is authentic or manipulated.',
+            'not a probability.',
+            'How DeepShield Works',
+            'AI Models',
+            'Forensic Algorithms',
+            'System Features',
+            'Academic Research Disclaimer',
+            'Up to 5 AI Models',
+            'Model Scores',
+            'SHA-256 Hash',
+            'Explanation Maps',
+            'Ensemble Decision',
+            'Analysis History',
+        ):
+            self.assertIn(content, html)
+        self.assertRegex(html, r'Upload a JPG or PNG portrait photo \(up to [\d.]+ MB\)\.')
+        self.assertIn('class="ds-home"', html)
+        self.assertIn('static/images/home-face.png', html)
+        self.assertIn('ds-home-face-mesh', html)
+        self.assertIn('Illustrative visual only — this image has not been analyzed.', html)
+        self.assertNotIn('FACE-SCAN VISUALIZATION', html)
+        self.assertIn('class="ds-home-visual-note"', html)
+        self.assertIn('Analysis features orbiting the illustrative face scan', html)
+        orbit_groups = re.findall(r'<ul class="ds-home-orbit [^"]+"[^>]*>(.*?)</ul>', html, re.S)
+        self.assertEqual(len(orbit_groups), 3)
+        self.assertEqual(
+            [group.count('class="ds-hero-icon-item ds-home-capability"') for group in orbit_groups],
+            [2, 2, 2],
+        )
+        self.assertEqual(html.count('class="ds-hero-icon-item ds-home-capability"'), 6)
+        self.assertEqual(html.count('class="ds-home-capability-label"'), 6)
+        self.assertNotIn('dsBinaryFaceCanvas', html)
+        self.assertIn(f'href="{reverse("register")}"', html)
+        self.assertIn(f'href="{reverse("login")}"', html)
+
+    def test_register_nav_does_not_link_back_to_itself(self):
+        html = self.client.get(reverse('register')).content.decode()
+        nav = html[:html.index('</nav>')]
+        self.assertNotIn('class="ds-btn-register"', nav)
+
 
 class ConsentTests(ApiTestCase):
     def test_registration_requires_privacy_acceptance(self):
@@ -40,9 +119,22 @@ class ConsentTests(ApiTestCase):
         self.assertTrue(User.objects.filter(username='carol').exists(), r.content[:300])
 
     def test_privacy_page_is_public_and_states_retention(self):
-        with override_settings(DELETE_ANALYSIS_AFTER_DAYS=14):
+        with override_settings(DELETE_ANALYSIS_AFTER_DAYS=14, AUDIT_LOG_RETENTION_DAYS=1,
+                               MAX_UPLOAD_SIZE=512 * 1024):
             r = self.client.get(reverse('privacy'))
-        self.assertContains(r, 'automatically deleted 14 days')
+        self.assertContains(r, 'operator-run cleanup process is configured to delete analyses and their files after <strong>14 days</strong>')
+        self.assertContains(r, 'up to 512.0')
+        self.assertContains(r, 'kept for 1 day.')
+        self.assertContains(r, 'raw, uncalibrated indicators—not probabilities')
+        self.assertContains(r, 'contact the organization that operates this site')
+
+        with override_settings(DELETE_ANALYSIS_AFTER_DAYS=1, AUDIT_LOG_RETENTION_DAYS=2,
+                               MAX_UPLOAD_SIZE=10 * 1024 * 1024):
+            singular = self.client.get(reverse('privacy'))
+        self.assertContains(singular, 'operator-run cleanup process is configured to delete analyses and their files after <strong>1 day</strong>')
+        self.assertContains(singular, 'up to 10.0')
+        self.assertContains(singular, 'kept for 2 days.')
+
         with override_settings(DELETE_ANALYSIS_AFTER_DAYS=0):
             self.assertContains(self.client.get(reverse('privacy')), 'kept until you delete them')
 
@@ -107,8 +199,8 @@ class CSPTests(ApiTestCase):
 
     def test_signed_in_users_skip_the_landing_page(self):
         self.client.force_login(self.alice)
-        self.assertRedirects(self.client.get(reverse('home')), reverse('upload'))
-        nav = self.client.get(reverse('upload')).content.decode()
+        self.assertRedirects(self.client.get(reverse('home')), reverse('history'))
+        nav = self.client.get(reverse('history')).content.decode()
         nav = nav[:nav.index('</nav>')]
         for gone in ('/public/#models', '/public/#algorithms', '/dashboard/'):
             self.assertNotIn(f'href="{gone}"', nav)
@@ -170,9 +262,62 @@ class HonestPresentationTests(ApiTestCase):
         rec = self.two_face_analysis(self.alice)
         html = self.page('result', rec)
         self.assertIn('Not a probability', html)
+        self.assertIn('System assessment', html)
+        self.assertIn('Model coverage:', html)
+        self.assertIn(f'{rec.analysis.executed_models} available', html)
+        self.assertIn(f'{rec.analysis.unavailable_models} unavailable', html)
+        self.assertIn('Model votes:', html)
+        self.assertIn('headline summarizes the available model outputs', html)
+        self.assertIn('Forensic checks are separate supporting observations', html)
+        self.assertIn('raw, uncalibrated indicators—not probabilities', html)
+        self.assertIn('Neither the assessment nor these indicators prove', html)
+        self.assertNotIn('Looks fake', html)
+        self.assertNotIn('Looks real', html)
         self.assertIn('Face 1', html)
         self.assertIn('Face 2', html)
         self.assertIn('not proof', html.lower())
+
+    def test_public_and_upload_copy_uses_current_limit_and_cautious_score_language(self):
+        with override_settings(MAX_UPLOAD_SIZE=15 * 1024 * 1024):
+            home = self.client.get(reverse('home')).content.decode()
+            self.client.force_login(self.alice)
+            upload = self.client.get(reverse('upload')).content.decode()
+
+        self.assertIn('up to 15 MB', home)
+        self.assertIn('Maximum: 15 MB', upload)
+        self.assertIn('raw, uncalibrated score—not a probability', home)
+        self.assertIn('not proof that an image is authentic or manipulated', home)
+        self.assertNotIn('confidence score', home.lower())
+        self.assertNotIn('probabilistic', home.lower())
+        self.assertNotIn('Maximum: 10 MB', upload)
+
+    def test_registration_does_not_promise_unlimited_analyses(self):
+        html = self.client.get(reverse('register')).content.decode()
+        self.assertIn('Image analysis &amp; history', html)
+        self.assertNotIn('Unlimited image analysis', html)
+
+    def test_detail_report_and_history_use_cautious_assessment_language(self):
+        rec = self.two_face_analysis(self.alice)
+        states = (
+            ('LIKELY_MANIPULATED', 'Possible manipulation indicators', 'Possible manipulation'),
+            ('LIKELY_AUTHENTIC', 'No strong manipulation indicators', 'No strong indicators'),
+        )
+        for prediction, assessment_label, history_label in states:
+            with self.subTest(prediction=prediction):
+                rec.analysis.final_prediction = prediction
+                rec.analysis.save(update_fields=['final_prediction'])
+                detail = self.page('detail', rec)
+                report = self.page('report', rec)
+                history = self.client.get(reverse('history')).content.decode()
+
+                for html in (detail, report):
+                    self.assertIn('System assessment', html)
+                    self.assertIn(assessment_label, html)
+                    self.assertIn('not proof that an image is authentic or manipulated', html)
+
+                self.assertIn(f'>{history_label}</span>', history)
+                self.assertNotIn('>Manipulated</span>', history)
+                self.assertNotIn('>Authentic</span>', history)
 
     def test_result_omits_disabled_models_from_expected_count(self):
         rec = self.two_face_analysis(self.alice)
@@ -240,8 +385,8 @@ class PublicPagesTests(ApiTestCase):
         data = {'username': 'dave', 'email': 'd@example.com', 'password1': PW + 'x1!', 'password2': PW + 'x1!',
                 'accept_privacy': 'on'}
         r = self.client.post(reverse('register'), data)
-        self.assertRedirects(r, reverse('upload'), fetch_redirect_response=False)
-        self.assertEqual(self.client.get(reverse('upload')).status_code, 200)
+        self.assertRedirects(r, reverse('history'), fetch_redirect_response=False)
+        self.assertEqual(self.client.get(reverse('history')).status_code, 200)
 
     def test_upload_page_has_no_consent_checkbox(self):
         self.client.force_login(self.alice)

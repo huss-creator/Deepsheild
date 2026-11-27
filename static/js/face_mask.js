@@ -67,6 +67,11 @@
       this._ro = new ResizeObserver(function () { self.layout(); self.draw(performance.now()); });
       this._ro.observe(root);
     }
+    this._onResize = null;
+    if (this.mode === 'processing') {
+      this._onResize = function () { self.layout(); self.draw(performance.now()); };
+      window.addEventListener('resize', this._onResize);
+    }
   }
 
   var P = DSFaceMask.prototype;
@@ -89,7 +94,11 @@
   P.setLabel = function (text) { this.label = text || ''; };
   P.setLayers = function (l) { Object.assign(this.layers, l); this.draw(performance.now()); };
   P.setActive = function (i) { this.active = i; this.draw(performance.now()); };
-  P.stop = function () { this.running = false; if (this._ro) { this._ro.disconnect(); } };
+  P.stop = function () {
+    this.running = false;
+    if (this._ro) { this._ro.disconnect(); }
+    if (this._onResize) { window.removeEventListener('resize', this._onResize); }
+  };
   P.replayUnmask = function () { this.maskFade = 1; this.maskFadeStart = performance.now(); this.start(); };
 
   /* Regions for the legend: [{n, label, x, y}] in crop-fraction terms for the active face. */
@@ -103,7 +112,9 @@
     var w = this.root.clientWidth || 400;
     var iw = this.imgInfo.width || 4, ih = this.imgInfo.height || 3;
     var h = Math.round(w * ih / iw);
-    var maxH = Math.round(Math.max(360, window.innerHeight * 0.72));
+    var maxH = this.mode === 'processing'
+      ? Math.max(180, Math.floor(window.innerHeight * 0.52))
+      : Math.round(Math.max(360, window.innerHeight * 0.72));
     if (h > maxH) { h = maxH; w = Math.round(h * iw / ih); }
     this.cssW = w; this.cssH = h;
     var dpr = Math.min(window.devicePixelRatio || 1, 2);

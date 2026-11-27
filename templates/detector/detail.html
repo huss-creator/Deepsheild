@@ -50,19 +50,19 @@
     {% if analysis %}
     <div class="ds-card mb-4 ds-reveal">
         <div class="ds-card-header">
-            <h2 class="ds-card-title"><i class="bi bi-award"></i>Final Verdict</h2>
+            <h2 class="ds-card-title"><i class="bi bi-award"></i>System assessment</h2>
         </div>
         <div class="ds-card-body">
             <div class="row align-items-center g-4">
                 <div class="col-md-7">
                     {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}
-                    <div class="ds-final-badge ds-final-manipulated"><i class="bi bi-exclamation-triangle-fill"></i>Potentially Manipulated</div>
+                    <div class="ds-final-badge ds-final-manipulated"><i class="bi bi-exclamation-triangle-fill"></i>Possible manipulation indicators</div>
                     {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}
-                    <div class="ds-final-badge ds-final-authentic"><i class="bi bi-check-circle-fill"></i>Likely Authentic</div>
+                    <div class="ds-final-badge ds-final-authentic"><i class="bi bi-check-circle-fill"></i>No strong manipulation indicators</div>
                     {% else %}
                     <div class="ds-final-badge ds-final-uncertain"><i class="bi bi-question-circle-fill"></i>Uncertain</div>
                     {% endif %}
-                    <p class="small text-muted mt-3 mb-0">AI scores are uncalibrated model outputs, not probabilities. See the result page for the per-face breakdown.</p>
+                    <p class="small text-muted mt-3 mb-0">AI scores are raw, uncalibrated outputs, not probabilities. This assessment and its indicators are not proof that an image is authentic or manipulated. See the result page for the per-face breakdown.</p>
                     <div class="ds-explanation mt-3"><i class="bi bi-chat-text me-2" style="color:var(--accent);"></i>{{ analysis.explanation }}</div>
                 </div>
                 <div class="col-md-5">

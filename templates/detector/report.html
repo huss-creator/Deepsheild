@@ -47,8 +47,8 @@
         }
 
         /* ---- Data grid ---- */
-        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.5rem; }
-        .report-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 1.5rem; }
+        .report-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .report-field { padding: 0.4rem 0; border-bottom: 1px solid var(--border-subtle); }
         .report-field-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .report-field-value { font-size: 0.9rem; color: var(--text-primary); font-weight: 500; margin-top: 0.15rem; }
@@ -76,7 +76,8 @@
         .report-verdict-confidence { font-size: 1rem; color: var(--text-secondary); margin-top: 0.25rem; }
 
         /* ---- Model results table ---- */
-        .report-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        .report-table-wrap { max-width: 100%; overflow-x: auto; }
+        .report-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 0.875rem; }
         .report-table thead tr { border-bottom: 2px solid var(--border-subtle); }
         .report-table th { padding: 0.6rem 0.75rem; text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
         .report-table td { padding: 0.75rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
@@ -90,8 +91,20 @@
 
         /* ---- Forensic images ---- */
         .report-forensic-images { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
-        .report-forensic-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-subtle); }
+        .report-forensic-img { width: 100%; height: auto; max-height: 360px; object-fit: contain; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-subtle); }
         .report-img-label { font-size: 0.68rem; color: var(--text-muted); text-align: center; margin-top: 0.25rem; }
+
+        @media (max-width: 700px) {
+            .report-body { padding: 1.25rem 1rem; }
+            .report-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .report-forensic-images { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 480px) {
+            .report-grid, .report-grid-3, .report-forensic-images { grid-template-columns: 1fr; }
+            .report-title { font-size: 1.35rem; }
+            .report-verdict { padding: 1rem; }
+            .report-verdict-value { font-size: 1.45rem; }
+        }
 
         /* ---- Disclaimer ---- */
         .report-disclaimer {
@@ -131,6 +144,8 @@
             .report-disclaimer-title { color: #c00; }
             .report-disclaimer p { color: #333; }
             .badge { border: 1px solid #ccc; background: #f0f0f0 !important; color: #333 !important; }
+            .report-table-wrap { overflow: visible; }
+            .report-table { min-width: 0; }
         }
     </style>
 </head>
@@ -227,7 +242,7 @@
             </div>
             <div class="report-field">
                 <div class="report-field-label">Algorithm</div>
-                <div class="report-field-value">OpenCV Haar Cascade</div>
+                <div class="report-field-value">OpenCV face detection</div>
             </div>
             <div class="report-field">
                 <div class="report-field-label">Analysis Input</div>
@@ -240,6 +255,7 @@
     {% if analysis %}
     <div class="report-section">
         <div class="report-section-title"><i class="bi bi-cpu me-1"></i>4. Individual AI Model Results</div>
+        <div class="report-table-wrap" role="region" aria-label="Individual AI model results" tabindex="0">
         <table class="report-table">
             <thead>
                 <tr>
@@ -268,22 +284,23 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 
     {# ==================== 5. ENSEMBLE RESULT ==================== #}
     <div class="report-section">
         <div class="report-section-title"><i class="bi bi-award me-1"></i>5. Ensemble Analysis Result</div>
         <div class="report-verdict">
-            <div class="report-verdict-label">Final AI Prediction</div>
+            <div class="report-verdict-label">System assessment</div>
             <div class="report-verdict-value
                 {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}manipulated
                 {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}authentic
                 {% else %}uncertain{% endif %}">
-                {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}⚠ Potentially Manipulated
-                {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}✓ Likely Authentic
-                {% else %}? Uncertain / Inconclusive{% endif %}
+                {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}⚠ Possible manipulation indicators
+                {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}✓ No strong manipulation indicators
+                {% else %}? Uncertain — evidence is inconclusive{% endif %}
             </div>
-            <div class="report-verdict-confidence">AI ensemble score: {% if rep_face and rep_face.score != None %}{{ rep_face.score|floatformat:2 }} / 1.00 (uncalibrated; not a probability){% else %}not available{% endif %}</div>
+            <div class="report-verdict-confidence">System score: {% if rep_face and rep_face.score != None %}{{ rep_face.score|floatformat:2 }} / 1.00 (raw, uncalibrated; not a probability){% else %}not available{% endif %}. This assessment and its indicators are not proof that an image is authentic or manipulated.</div>
         </div>
         <div class="report-grid">
             <div class="report-field"><div class="report-field-label">Authentic Votes</div><div class="report-field-value">{{ analysis.authentic_votes }}</div></div>

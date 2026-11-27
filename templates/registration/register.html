@@ -1,59 +1,79 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Register{% endblock %}
 
 {% block content %}
 <div class="ds-auth-container">
+    {# Phase 2/3: Reusable Ambient Particle & Mouse Lighting Canvas (Subtle Preset) #}
+    <canvas id="dsAuthAtmosphere" class="ds-auth-canvas" data-preset="subtle" aria-hidden="true"></canvas>
 
     <div class="container">
-        <div class="row justify-content-center align-items-start" style="min-height: 80vh; padding: 2rem 0;">
+        <div class="row justify-content-center align-items-center g-4 g-xl-5 py-2">
 
             {# Left branding panel — hidden on mobile #}
-            <div class="col-lg-5 d-none d-lg-block pe-5 pt-4">
-                <div style="animation: slideUp 0.4s ease;">
+            <div class="col-lg-6 col-xl-5 d-none d-lg-block pe-xl-4">
+                <div class="ds-auth-hero">
 
-                    {# Logo #}
-                    <div class="mb-4" style="font-size: 1.6rem; font-weight: 800; background: var(--gradient-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;">
-                        <i class="bi bi-shield-fill-check me-2" style="-webkit-text-fill-color: transparent; background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text;"></i>
-                        DeepShield
+                    {# Brand lockup #}
+                    <div class="ds-auth-hero-logo">
+                        <i class="bi bi-shield-fill-check"></i>
+                        <span>Deep<strong>Shield</strong></span>
                     </div>
 
-                    <h2 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 1rem;">
+                    {# Primary headline #}
+                    <h2 class="ds-auth-hero-title">
                         Start Your Forensic<br>
-                        <span style="background: var(--gradient-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Analysis Journey</span>
+                        <span class="ds-highlight">Analysis Journey</span>
                     </h2>
 
-                    <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.75; max-width: 340px;">
-                        Create a free account and get instant access to our AI-powered deepfake detection system with full forensic reporting.
+                    {# High-contrast description #}
+                    <p class="ds-auth-hero-desc">
+                        Create a free forensic account to run deepfake detection, verify cryptographic hashes, and export comprehensive forensic intelligence reports.
                     </p>
 
-                    <ul class="ds-auth-feature-list mt-4">
-                        <li><i class="bi bi-check-circle-fill"></i> Free access to 5 AI detection models</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Unlimited image analysis &amp; history</li>
-                        <li><i class="bi bi-check-circle-fill"></i> SHA-256 cryptographic fingerprinting</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Grad-CAM explainability for AI decisions</li>
+                    {# Refined feature list with capability badges #}
+                    <ul class="ds-auth-feature-list">
+                        <li>
+                            <span class="ds-feature-icon"><i class="bi bi-cpu"></i></span>
+                            <span>Ensemble analysis using up to 5 AI models</span>
+                        </li>
+                        <li>
+                            <span class="ds-feature-icon"><i class="bi bi-fingerprint"></i></span>
+                            <span>SHA-256 cryptographic image fingerprinting</span>
+                        </li>
+                        <li>
+                            <span class="ds-feature-icon"><i class="bi bi-journal-text"></i></span>
+                            <span>Personal analysis history &amp; verifiable records</span>
+                        </li>
+                        <li>
+                            <span class="ds-feature-icon"><i class="bi bi-shield-check"></i></span>
+                            <span>Private workspace with strict data protection</span>
+                        </li>
                     </ul>
 
                 </div>
             </div>
 
             {# Right: Registration card #}
-            <div class="col-lg-5 col-md-7 col-sm-10">
+            <div class="col-lg-6 col-xl-5 col-md-8 col-sm-11 d-flex justify-content-center">
                 <div class="ds-auth-card">
                     <div class="ds-corner-tl"></div>
                     <div class="ds-corner-br"></div>
 
                     {# Header #}
                     <div class="ds-auth-header">
-                        <i class="bi bi-person-plus-fill ds-auth-icon"></i>
+                        <div class="ds-auth-icon-wrap">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
                         <h1 class="ds-auth-title">Create Account</h1>
-                        <p class="ds-auth-subtitle">Join DeepShield — it's free</p>
+                        <p class="ds-auth-subtitle">Join DeepShield — enterprise-grade media authentication</p>
                     </div>
 
-                    {# Little terminal readout — purely decorative, CSS-only typewriter #}
+                    {# Precision telemetry readout #}
                     <div class="ds-terminal" aria-hidden="true">
-                        <span class="ds-terminal-line">&gt; initializing new identity record...</span>
-                        <span class="ds-terminal-line">&gt; password will be hashed on submit_</span>
+                        <span class="ds-terminal-line">&gt; initializing secure identity record...</span>
+                        <span class="ds-terminal-line">&gt; PBKDF2 cryptographic salt &amp; hash on submit_</span>
                     </div>
 
                     {# Registration Form — csrf_token required for Django CSRF protection #}
@@ -61,7 +81,7 @@
                         {% csrf_token %}
 
                         {# Username #}
-                        <div class="mb-3">
+                        <div class="mb-2 pb-1">
                             <label for="{{ form.username.id_for_label }}" class="form-label ds-label">
                                 <i class="bi bi-person"></i> Username
                             </label>
@@ -76,7 +96,7 @@
                         </div>
 
                         {# Email #}
-                        <div class="mb-3">
+                        <div class="mb-2 pb-1">
                             <label for="{{ form.email.id_for_label }}" class="form-label ds-label">
                                 <i class="bi bi-envelope"></i> Email Address
                             </label>
@@ -90,16 +110,23 @@
                             {% endif %}
                         </div>
 
-                        <div class="form-check mb-3">
+                        {# Privacy Policy Checkbox #}
+                        <div class="form-check mb-2 pb-1">
                             {{ form.accept_privacy }}
-                            <label class="form-check-label small" for="{{ form.accept_privacy.id_for_label }}">
+                            <label class="form-check-label" for="{{ form.accept_privacy.id_for_label }}">
                                 I have read and accept the <a href="{% url 'privacy' %}" target="_blank" rel="noopener">Privacy Notice</a>.
                             </label>
-                            {% if form.accept_privacy.errors %}<div class="ds-field-error">{% for e in form.accept_privacy.errors %}<i class="bi bi-exclamation-circle"></i>{{ e }}{% endfor %}</div>{% endif %}
+                            {% if form.accept_privacy.errors %}
+                                <div class="ds-field-error">
+                                    {% for e in form.accept_privacy.errors %}
+                                        <i class="bi bi-exclamation-circle"></i>{{ e }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         {# Password with strength indicator #}
-                        <div class="mb-3">
+                        <div class="mb-2 pb-1">
                             <label for="{{ form.password1.id_for_label }}" class="form-label ds-label">
                                 <i class="bi bi-lock"></i> Password
                             </label>
@@ -148,7 +175,7 @@
                         </div>
 
                         {# Confirm Password #}
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="{{ form.password2.id_for_label }}" class="form-label ds-label">
                                 <i class="bi bi-lock-fill"></i> Confirm Password
                             </label>
@@ -170,7 +197,7 @@
 
                         {# Non-field errors e.g. password mismatch #}
                         {% if form.non_field_errors %}
-                        <div class="ds-field-error mb-3" style="font-size: 0.875rem; padding: 0.75rem; background: var(--danger-dim); border-radius: var(--radius-sm); border: 1px solid rgba(239,68,68,0.2);">
+                        <div class="ds-field-error mb-3">
                             {% for error in form.non_field_errors %}
                                 <i class="bi bi-exclamation-triangle me-1"></i>{{ error }}
                             {% endfor %}
@@ -178,14 +205,14 @@
                         {% endif %}
 
                         {# Submit #}
-                        <button type="submit" class="btn ds-btn-primary w-100 btn-lg" id="registerSubmitBtn">
+                        <button type="submit" class="btn ds-btn-primary w-100" id="registerSubmitBtn">
                             <i class="bi bi-person-check"></i> Create Account
                         </button>
 
                     </form>
 
                     <div class="ds-auth-trust">
-                        <i class="bi bi-shield-lock-fill"></i> Your password is hashed — never stored as plain text
+                        <i class="bi bi-shield-check"></i> Salted cryptographic hashes — credentials never stored in plaintext
                     </div>
 
                     <div class="ds-auth-footer">
@@ -202,6 +229,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script nonce="{{ csp_nonce }}" src="{% static 'js/atmosphere.js' %}?v=20261111"></script>
 <script nonce="{{ csp_nonce }}">
 // ============================================================
 // Register page JavaScript

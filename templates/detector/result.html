@@ -30,20 +30,25 @@
     {# ==================== VERDICT + MODEL SCORE CIRCLES ==================== #}
     <div class="rs-verdict {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}bad{% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}good{% else %}unsure{% endif %}">
         <div class="rs-vleft">
-            <div class="rs-verdict-kicker">Final verdict &middot; {{ analysis.executed_models }} of {{ expected_models }} model{% if expected_models != 1 %}s{% endif %} ran</div>
+            <div class="rs-verdict-kicker">System assessment</div>
             {% if analysis.final_prediction == 'LIKELY_MANIPULATED' %}
-            <div class="rs-verdict-label"><i class="bi bi-exclamation-triangle-fill me-2"></i>Potentially Manipulated</div>
+            <div class="rs-verdict-label"><i class="bi bi-exclamation-triangle-fill me-2"></i>Possible manipulation indicators</div>
             {% elif analysis.final_prediction == 'LIKELY_AUTHENTIC' %}
-            <div class="rs-verdict-label"><i class="bi bi-check-circle-fill me-2"></i>Likely Authentic</div>
+            <div class="rs-verdict-label"><i class="bi bi-check-circle-fill me-2"></i>No strong manipulation indicators</div>
             {% else %}
-            <div class="rs-verdict-label"><i class="bi bi-question-circle-fill me-2"></i>Uncertain / Inconclusive</div>
+            <div class="rs-verdict-label"><i class="bi bi-question-circle-fill me-2"></i>Uncertain — evidence is inconclusive</div>
             {% endif %}
+            <div class="small mt-2" aria-label="Model coverage and agreement">
+                <p class="mb-1"><strong>Model coverage:</strong> {{ analysis.executed_models }} available &middot; {{ unavailable_models }} unavailable</p>
+                <p class="mb-1"><strong>Model votes:</strong> {{ analysis.authentic_votes }} for authentic &middot; {{ analysis.manipulation_votes }} for possible manipulation</p>
+                <p class="mb-0">This headline summarizes the available model outputs. Forensic checks are separate supporting observations. Model scores are raw, uncalibrated indicators—not probabilities. Neither the assessment nor these indicators prove that an image is authentic or manipulated.</p>
+            </div>
             {% if rep_face and rep_face.score != None %}
-            <div class="rs-score" id="ensembleScore"><b>{{ rep_face.score|floatformat:2 }}</b><small>/ 1.00 &middot; Not a probability</small></div>
+            <div class="rs-score" id="ensembleScore"><b>{{ rep_face.score|floatformat:2 }}</b><small>/ 1.00 &middot; System score, not a probability</small></div>
             {% endif %}
             {% if forensic %}
             <div class="d-flex flex-wrap align-items-center gap-2 mt-2" id="forensicLevel">
-                <small style="color: var(--text-secondary);">Forensic indicators</small>
+                <small style="color: var(--text-secondary);">Supporting forensic observations</small>
                 <span class="badge {% if forensic.overall_risk == 'LOW' %}bg-success{% elif forensic.overall_risk == 'MEDIUM' %}bg-warning text-dark{% elif forensic.overall_risk == 'HIGH' %}bg-danger{% else %}bg-secondary{% endif %}">{{ forensic.overall_risk|default:"Unavailable" }}</span>
             </div>
             {% endif %}
@@ -74,7 +79,7 @@
         <div>
             <p style="font-size:.88rem; color: var(--text-secondary); line-height:1.6;">{{ analysis_explanation }}</p>
             {% if rep_face and rep_face.score != None %}
-            <p class="small text-muted">{% if rep_face.validated %}Calibrated on validation data.{% else %}<strong>Not a probability.</strong> This is an uncalibrated model score (higher = more manipulation-like); it has not been validated against a labelled test set.{% endif %}</p>
+            <p class="small text-muted">{% if rep_face.validated %}The ensemble configuration was validated on data. Per-model scores remain raw, uncalibrated indicators, not probabilities; validation does not prove authenticity or manipulation.{% else %}<strong>Not a probability.</strong> The ensemble has not been validated against a labelled test set. Per-model scores are raw, uncalibrated indicators; treat the assessment as a rough signal, not proof.{% endif %}</p>
             {% elif analysis.final_prediction == 'UNCERTAIN' %}
             <p class="small text-muted">No reliable AI score is available for this image.</p>
             {% endif %}
@@ -154,7 +159,7 @@
         <div>
             <div class="rs-section-title" style="margin-top:0;">
                 <h2>AI models</h2>
-                <small>1.00 means the model believes the face is fake</small>
+                <small>Higher raw scores mean more manipulation-like; scores are not probabilities.</small>
             </div>
             {% if faces_view %}
             {% for f in faces_view %}
@@ -176,12 +181,12 @@
                         {% if mr.details.status == 'DISABLED' %}<span class="rs-pill mute">Disabled</span>
                         {% elif mr.status == 'not_configured' or mr.status == 'standby' or mr.prediction == 'STANDBY' %}<span class="rs-pill mute">Standby</span>
                         {% elif mr.status == 'error' %}<span class="rs-pill warn">Module offline</span>
-                        {% elif mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}<span class="rs-pill bad">Looks fake</span>
-                        {% elif mr.prediction == 'REAL' or mr.prediction == 'ORIGINAL' %}<span class="rs-pill good">Looks real</span>
+                        {% elif mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}<span class="rs-pill bad">Flags possible manipulation</span>
+                        {% elif mr.prediction == 'REAL' or mr.prediction == 'ORIGINAL' %}<span class="rs-pill good">No strong manipulation signal</span>
                         {% else %}<span class="rs-pill warn">{{ mr.prediction }}</span>{% endif %}
                     </div>
                     <div class="rs-pair">
-                        {% if f.crop %}<figure><img src="{{ f.crop }}" alt="Face {{ f.index }} analysed by {{ mr.model_name }}" loading="lazy"><figcaption>Face {{ f.index }}</figcaption></figure>{% endif %}
+                        {% if f.crop %}<figure><img src="{{ f.crop }}" alt="Face {{ f.index }} analyzed by {{ mr.model_name }}" loading="lazy"><figcaption>Face {{ f.index }}</figcaption></figure>{% endif %}
                         {% if mr.has_gradcam and mr.gradcam_image %}
                         <figure><img src="{{ mr.gradcam_image.url }}" alt="Grad-CAM attention map for {{ mr.model_name }}" loading="lazy"><figcaption>Grad-CAM</figcaption></figure>
                         {% else %}
@@ -208,9 +213,9 @@
                             {% elif mr.status == 'error' %}
                                 This model could not produce a result for this face.
                             {% elif mr.prediction == 'FAKE' or mr.prediction == 'TAMPERED' %}
-                                The model's raw score is above its decision threshold, so it votes <strong>fake</strong> for this face.
+                                The model's raw score is above its decision threshold, so it flags possible manipulation in this face.
                             {% else %}
-                                The model's raw score is below its decision threshold, so it votes <strong>real</strong> for this face.
+                                The model's raw score is below its decision threshold, so it does not flag strong manipulation indicators in this face.
                             {% endif %}
                             {% if mr.has_gradcam and mr.gradcam_image %}Highlighted regions in the attention map are the areas that influenced this model's prediction.{% endif %}
                             {% if mr.message %}<span class="d-block mt-1"><i class="bi bi-info-circle me-1"></i>{{ mr.message }}</span>{% endif %}
@@ -352,7 +357,7 @@
         </div>
     </div>
     <div class="d-flex flex-wrap gap-3">
-        <a href="{% url 'upload' %}" class="btn ds-btn-primary"><i class="bi bi-scan me-1"></i>Analyse Another</a>
+        <a href="{% url 'upload' %}" class="btn ds-btn-primary"><i class="bi bi-scan me-1"></i>Analyze Another</a>
         {% if analysis %}<a href="{% url 'report' upload.pk %}" class="btn ds-btn-outline"><i class="bi bi-file-earmark-text me-1"></i>Full Report</a>{% endif %}
         <a href="{% url 'history' %}" class="btn ds-btn-outline"><i class="bi bi-clock-history me-1"></i>History</a>
     </div>

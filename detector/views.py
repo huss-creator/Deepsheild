@@ -51,8 +51,10 @@ def home_view(request):
     This page is visible to everyone (no login required).
     """
     if request.user.is_authenticated:
-        return redirect('upload')          # signed-in users go straight to the Analyse page
-    return render(request, 'home.html')
+        return redirect('history')          # signed-in users go straight to the Analysis page
+    return render(request, 'home.html', {
+        'max_mb': dj_settings.MAX_UPLOAD_SIZE // (1024 * 1024),
+    })
 
 
 # ============================================================
@@ -66,9 +68,9 @@ def register_view(request):
     POST request: Validate form data and create user if valid.
     """
 
-    # If user is already logged in, send them to the Analyse page
+    # If user is already logged in, send them to the Analysis page
     if request.user.is_authenticated:
-        return redirect('upload')
+        return redirect('history')
 
     if request.method == 'POST':
         if not ratelimit.allow('register', ratelimit.client_ip(request)):
@@ -82,7 +84,7 @@ def register_view(request):
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             audit.audit(audit.LOGIN, request, user=user, channel='web')
             messages.success(request, f"Welcome, {user.username}! Your account is ready.")
-            return redirect('upload')
+            return redirect('history')
         # If form has errors, fall through to re-render with error messages
     else:
         # GET request — show an empty form
@@ -103,7 +105,7 @@ def login_view(request):
     """
 
     if request.user.is_authenticated:
-        return redirect('upload')
+        return redirect('history')
 
     next_url = request.POST.get('next') or request.GET.get('next') or ''
 
@@ -127,7 +129,7 @@ def login_view(request):
                     next_url, allowed_hosts={request.get_host()},
                     require_https=request.is_secure()):
                 next_url = ''
-            return redirect(next_url or 'upload')
+            return redirect(next_url or 'history')
         audit.audit(audit.LOGIN_FAILED, request, success=False, channel='web', username_hash=audit.hash_identifier(username))
         ratelimit.hit('login_fail', pair_id)
         ratelimit.hit('login_fail_ip', ip_id)
@@ -147,7 +149,6 @@ def logout_view(request):
     POST only (a GET link could be triggered cross-site to log a user out).
     """
     logout(request)
-    messages.info(request, "You have been logged out successfully.")
     return redirect('home')
 
 
@@ -176,7 +177,10 @@ def upload_view(request):
     if request.method == 'POST':
         if not ratelimit.allow('upload', f'user:{request.user.pk}'):
             return _too_many(request, 'detector/upload.html',
-                             {'form': ImageUploadForm()}, 'upload')
+                             {
+                                 'form': ImageUploadForm(),
+                                 'max_mb': dj_settings.MAX_UPLOAD_SIZE // (1024 * 1024),
+                             }, 'upload')
         form = ImageUploadForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -200,7 +204,7 @@ def upload_view(request):
                 messages.error(request, "An error occurred while processing the image. Please try again.")
                 return redirect('upload')
             if status in (UploadedImage.STATUS_PENDING, UploadedImage.STATUS_PROCESSING):
-                messages.info(request, "Your image is being analysed.")
+                messages.info(request, "Your image is being analyzed.")
                 return redirect('processing', pk=img_record.pk)       # real stages, polled from the job
             messages.success(request, "Image analysis completed successfully.")
             return redirect('result', pk=img_record.pk)
@@ -209,7 +213,11 @@ def upload_view(request):
     else:
         form = ImageUploadForm()
 
-    return render(request, 'detector/upload.html', {'form': form, 'retention_days': dj_settings.DELETE_ANALYSIS_AFTER_DAYS})
+    return render(request, 'detector/upload.html', {
+        'form': form,
+        'retention_days': dj_settings.DELETE_ANALYSIS_AFTER_DAYS,
+        'max_mb': dj_settings.MAX_UPLOAD_SIZE // (1024 * 1024),
+    })
 
 
 # ============================================================
@@ -643,7 +651,7 @@ def privacy_view(request):
     return render(request, 'privacy.html', {
         'retention_days': dj_settings.DELETE_ANALYSIS_AFTER_DAYS,
         'audit_days': dj_settings.AUDIT_LOG_RETENTION_DAYS,
-        'max_mb': dj_settings.MAX_UPLOAD_SIZE // (1024 * 1024)})
+        'max_upload_size': dj_settings.MAX_UPLOAD_SIZE})
 
 
 @login_required
@@ -698,5 +706,5 @@ def limitations_view(request):
 
 
 def root_view(request):
-    """/ sends signed-in users to the Analyse page and visitors to the public landing page."""
-    return redirect('upload' if request.user.is_authenticated else 'home')
+    """/ sends signed-in users to the Analysis page and visitors to the public landing page."""
+    return redirect('history' if request.user.is_authenticated else 'home')

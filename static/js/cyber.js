@@ -9,9 +9,11 @@
     if (!canvas || !canvas.getContext) return;
 
     const ctx = canvas.getContext('2d');
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
     let w, h, dpr;
     let points = [];
     let scanY = 0;
+    let animationFrame = null;
 
     function resize() {
         dpr = window.devicePixelRatio || 1;
@@ -79,14 +81,21 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        scanY = (scanY + 1.4) % (h + 80);
+        const animate = !motionPreference.matches;
+        if (animate) {
+            scanY = (scanY + 1.4) % (h + 80);
+        } else {
+            scanY = 0;
+        }
 
         for (const p of points) {
-            p.frame++;
-            if (p.frame % p.flipEvery === 0) {
-                p.val = p.val === '0' ? '1' : '0';
+            if (animate) {
+                p.frame++;
+                if (p.frame % p.flipEvery === 0) {
+                    p.val = p.val === '0' ? '1' : '0';
+                }
             }
-            const distFromScan = Math.abs(p.y - scanY);
+            const distFromScan = animate ? Math.abs(p.y - scanY) : Infinity;
             const boost = Math.max(0, 1 - distFromScan / 70);
             const base = p.feature ? 0.9 : 0.35;
             const alpha = Math.min(1, base + boost * 0.6);
@@ -103,10 +112,23 @@
             ctx.fillText(p.val, p.x, p.y);
         }
 
-        requestAnimationFrame(draw);
+        animationFrame = animate ? requestAnimationFrame(draw) : null;
+    }
+
+    function updateMotion() {
+        if (motionPreference.matches) {
+            if (animationFrame !== null) {
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+            draw();
+        } else if (animationFrame === null) {
+            animationFrame = requestAnimationFrame(draw);
+        }
     }
 
     window.addEventListener('resize', resize);
+    motionPreference.addEventListener('change', updateMotion);
     resize();
-    requestAnimationFrame(draw);
+    draw();
 })();
