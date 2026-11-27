@@ -151,8 +151,9 @@ def run_ai_analysis(image_path, faces_dir, heatmaps_dir, processed_dir=None,
                 from detector import metrics
                 metrics.record_model_failure(d.spec.key)
             outputs.append(out)
-            emit('model', {'face': face.index, 'key': d.spec.key, 'name': d.spec.display_name,
-                           'status': out.status, 'ms': _ms(t1)})
+            emit('model', {'face': face.index, 'face_count': len(faces),
+               'key': d.spec.key, 'name': d.spec.display_name,
+               'status': out.status, 'ms': _ms(t1)})
             if (settings.AI_EXPLAIN_ENABLED and out.status == AVAILABLE
                     and face.index < settings.AI_EXPLAIN_MAX_FACES):
                 try:
