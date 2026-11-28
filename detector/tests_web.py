@@ -89,7 +89,7 @@ class PublicNavigationTests(ApiTestCase):
         self.assertIn('ds-home-face-mesh', html)
         self.assertIn('Illustrative visual only — this image has not been analyzed.', html)
         self.assertNotIn('FACE-SCAN VISUALIZATION', html)
-        self.assertIn('class="ds-home-visual-note"', html)
+        self.assertRegex(html, r'class="[^"]*\bds-home-visual-note\b[^"]*"')
         self.assertIn('Analysis features orbiting the illustrative face scan', html)
         orbit_groups = re.findall(r'<ul class="ds-home-orbit [^"]+"[^>]*>(.*?)</ul>', html, re.S)
         self.assertEqual(len(orbit_groups), 3)
@@ -204,9 +204,33 @@ class CSPTests(ApiTestCase):
         nav = nav[:nav.index('</nav>')]
         for gone in ('/public/#models', '/public/#algorithms', '/dashboard/'):
             self.assertNotIn(f'href="{gone}"', nav)
-        for kept in ('/auth/upload/', '/auth/history/'):
+        for kept in ('/auth/upload/', '/auth/analysis/'):
             self.assertIn(f'href="{kept}"', nav)
 
+    def test_analysis_routes_use_canonical_analysis_urls(self):
+        rec = self.two_face_analysis(self.alice)
+
+        self.assertEqual(reverse('history'), '/auth/analysis/')
+        self.assertEqual(
+            reverse('result', args=[rec.pk]),
+            f'/auth/analysis/{rec.pk}/'
+        )
+
+        self.client.force_login(self.alice)
+
+        response = self.client.get(reverse('history'))
+        self.assertContains(response, f'/auth/detail/{rec.pk}/')
+
+        self.assertEqual(
+            self.client.get(reverse('result', args=[rec.pk])).status_code,
+            200
+        )
+
+        self.assertRedirects(
+            self.client.get(f'/auth/result/{rec.pk}/'),
+            reverse('result', args=[rec.pk]),
+            status_code=301
+        )
     def test_pages_get_policy_with_matching_nonce_on_every_script(self):
         self.client.force_login(self.alice)
         rec = self.two_face_analysis(self.alice)
@@ -293,7 +317,7 @@ class HonestPresentationTests(ApiTestCase):
 
     def test_registration_does_not_promise_unlimited_analyses(self):
         html = self.client.get(reverse('register')).content.decode()
-        self.assertIn('Image analysis &amp; history', html)
+        self.assertIn('Personal analysis history &amp; verifiable records', html)
         self.assertNotIn('Unlimited image analysis', html)
 
     def test_detail_report_and_history_use_cautious_assessment_language(self):

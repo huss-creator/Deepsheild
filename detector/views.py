@@ -577,7 +577,7 @@ class ThrottledPasswordResetView(auth_views.PasswordResetView):
     template_name = 'registration/password_reset_form.html'
     email_template_name = 'registration/password_reset_email.txt'
     subject_template_name = 'registration/password_reset_subject.txt'
-    success_url = '/password-reset/done/'
+    success_url = '/public/password-reset/done/'
 
     def post(self, request, *args, **kwargs):
         if not ratelimit.allow('password_reset', ratelimit.client_ip(request)):
