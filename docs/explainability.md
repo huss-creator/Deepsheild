@@ -13,17 +13,20 @@ copy of their own weights; an optional separately pinned state-dict is parity-ch
 | Organika SDXL Detector | Swin Transformer | **Grad-CAM** on the final normalization output (7×7); supports sequence-token and spatial-map layouts |
 | FFT/DCT + SVM | hand-made frequency features | **Frequency-band ablation** (Grad-CAM is not defined: no conv layers, no gradient). Each band/DCT position is replaced by the training mean; the fall in the "manipulated" score is drawn on the 2-D spectrum / 8×8 DCT grid |
 
-Grad-CAM++ is available for the CNNs and Swin model, and attention rollout for ViT. Direct PyTorch state-dict models use a
-separate copy of their loaded weights for explanations; TorchScript models need a matching configured explanation checkpoint.
+Grad-CAM++ is available for the CNNs and Swin model, and attention rollout for ViT. The first face in an image is explained
+once per available model; predictions still run independently on every detected face. Grad-CAM runs synchronously so a slow
+conversion cannot leave timed-out background work consuming CPU. Its duration is recorded in `timings_ms.explanations_ms`.
+Direct PyTorch state-dict models use a separate copy of their loaded weights; TorchScript models need a matching configured
+explanation checkpoint.
 `evaluate_explanations` picks the most faithful method on your data. The FFT/DCT + SVM model uses frequency-band ablation instead:
 Grad-CAM is not mathematically applicable to a non-differentiable feature/SVM pipeline.
 
 ## Setup (once, on the machine that runs the site)
 ```bash
-pip install torch torchvision timm onnx2torch            # torch (CPU build is enough), onnx2torch, onnx
+pip install -r requirements.txt                           # includes CPU-capable Grad-CAM dependencies
 python manage.py check_models
 ```
-That is all. The first heat-map after a restart takes a few seconds longer (conversion; ViT ~5-10 s); set `AI_MODEL_TIMEOUT=60`.
+The first heat-map for each model after a restart takes longer because its differentiable copy is built and parity-checked.
 Optional: if you do have the training notebooks' `*_state_dict.pth`, `python manage.py attach_explain key=path.pth ...` makes the
 explanation use those weights instead (SHA-256 pinned + parity checked).
 

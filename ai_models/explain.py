@@ -5,9 +5,8 @@ A heat-map shows image regions that influenced the model's output. It is NOT pro
 of manipulation and NOT a ground-truth localisation. Transformers and ONNX/SVM
 models report explanations as unavailable instead of faking them.
 
-NOTE: the Keras/Torch Grad-CAM functions are written to spec but were not executed
-in the development sandbox (tensorflow/torch are not installed there); only
-`overlay_heatmap` is covered by automated tests.
+The Keras and PyTorch implementations are backend-specific; ONNX models use the
+parity-checked differentiable converter in `ai_models.explainers`.
 """
 
 import logging

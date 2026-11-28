@@ -15,7 +15,7 @@
         </div>
         <div class="d-flex gap-2 flex-wrap">
             {% if analysis %}<a href="{% url 'report' upload.pk %}" class="btn ds-btn-outline btn-sm"><i class="bi bi-file-earmark-text me-1"></i>Report</a>{% endif %}
-            <a href="{% url 'history' %}" class="btn ds-btn-outline btn-sm"><i class="bi bi-arrow-left me-1"></i>History</a>
+            <a href="{% url 'history' %}" class="btn ds-btn-outline btn-sm"><i class="bi bi-arrow-left me-1"></i>My Analyses</a>
         </div>
     </div>
 
@@ -178,7 +178,7 @@
     </div>
 
     <div class="d-flex flex-wrap gap-3 ds-reveal">
-        <a href="{% url 'history' %}" class="btn ds-btn-outline"><i class="bi bi-arrow-left me-1"></i>Back to History</a>
+        <a href="{% url 'history' %}" class="btn ds-btn-outline"><i class="bi bi-arrow-left me-1"></i>Back to My Analyses</a>
         {% if analysis %}<a href="{% url 'report' upload.pk %}" class="btn ds-btn-outline"><i class="bi bi-file-earmark-text me-1"></i>Full Report</a>{% endif %}
         <a href="{% url 'upload' %}" class="btn ds-btn-primary"><i class="bi bi-scan me-1"></i>New Analysis</a>
     </div>

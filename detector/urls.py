@@ -1,12 +1,4 @@
-"""
-detector/urls.py: the two halves of the site.
-
-  /public/...  pages anyone can open (landing page, login, register, privacy, limitations)
-  /auth/...    pages that need a signed-in user (upload, processing, result, history, account)
-
-config/urls.py mounts `public_patterns` under /public/ and `auth_patterns` under /auth/.
-The url *names* (home, login, upload, result ...) are what templates use with {% url 'name' %}.
-"""
+"""Public and authenticated URL routes for the DeepShield web application."""
 
 from django.contrib.auth import views as auth_views
 from django.urls import path
@@ -19,13 +11,28 @@ public_patterns = [
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
     path('password-reset/', views.ThrottledPasswordResetView.as_view(), name='password_reset'),
-    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
-        template_name='registration/password_reset_done.html'), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
-        template_name='registration/password_reset_confirm.html', success_url='/public/reset/done/'),
-        name='password_reset_confirm'),
-    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
-        template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
+    path(
+        'password-reset/done/',
+        auth_views.PasswordResetDoneView.as_view(
+            template_name='registration/password_reset_done.html',
+        ),
+        name='password_reset_done',
+    ),
+    path(
+        'reset/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name='registration/password_reset_confirm.html',
+            success_url='/public/reset/done/',
+        ),
+        name='password_reset_confirm',
+    ),
+    path(
+        'reset/done/',
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name='registration/password_reset_complete.html',
+        ),
+        name='password_reset_complete',
+    ),
     path('privacy/', views.privacy_view, name='privacy'),
     path('limitations/', views.limitations_view, name='limitations'),
 ]

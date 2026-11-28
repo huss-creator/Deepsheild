@@ -195,6 +195,9 @@ class CSPTests(ApiTestCase):
         self.assertTrue(all(f'nonce="{nonce}"' in t for t in re.findall(r'<script\b[^>]*>', html)))
         for anchor in ('id="models"', 'id="algorithms"', 'id="how-it-works"'):
             self.assertIn(anchor, html)
+        nav = html[:html.index('</nav>')]
+        self.assertLess(nav.index('#how-it-works'), nav.index('#models'))
+        self.assertLess(nav.index('#models'), nav.index('#algorithms'))
         self.assertNotIn('href="/how-it-works/"', html[:html.index('</nav>')])   # navbar no longer carries public info links
 
     def test_signed_in_users_skip_the_landing_page(self):
@@ -206,6 +209,23 @@ class CSPTests(ApiTestCase):
             self.assertNotIn(f'href="{gone}"', nav)
         for kept in ('/auth/upload/', '/auth/analysis/'):
             self.assertIn(f'href="{kept}"', nav)
+        self.assertIn('My Analyses', nav)
+        self.assertIn('Account settings', nav)
+        self.assertIn('Sign out', nav)
+        self.assertIn('profileMenu', nav)
+        self.assertIn('data-bs-toggle="dropdown"', nav)
+        self.assertNotIn('ds-btn-logout', nav)
+
+    def test_analysis_routes_use_canonical_analysis_urls(self):
+        rec = self.two_face_analysis(self.alice)
+        self.assertEqual(reverse('history'), '/auth/analysis/')
+        self.assertEqual(reverse('result', args=[rec.pk]), f'/auth/analysis/{rec.pk}/')
+        self.client.force_login(self.alice)
+        response = self.client.get(reverse('history'))
+        self.assertContains(response, reverse('result', args=[rec.pk]))
+        self.assertEqual(self.client.get(reverse('result', args=[rec.pk])).status_code, 200)
+        self.assertRedirects(self.client.get(f'/auth/result/{rec.pk}/'),
+                             reverse('result', args=[rec.pk]), status_code=301)
 
     def test_analysis_routes_use_canonical_analysis_urls(self):
         rec = self.two_face_analysis(self.alice)

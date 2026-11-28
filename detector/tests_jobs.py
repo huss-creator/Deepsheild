@@ -55,6 +55,13 @@ class JobTestCase(ApiTestCase):
 
 
 class StageTests(JobTestCase):
+    def test_live_model_events_identify_the_face(self):
+        rec = self.submit_queued()
+        jobs.push_live(rec.job.pk, 'model', {'face': 1, 'face_count': 2, 'name': 'ViT-B/16',
+                                             'status': 'AVAILABLE'})
+        rec.job.refresh_from_db()
+        self.assertEqual(rec.job.live['events'][-1]['msg'], 'ViT-B/16 (face 2/2) finished')
+
     def test_job_moves_through_the_real_stages_in_order(self):
         seen = []
         real = jobs.set_stage
