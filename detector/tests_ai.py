@@ -484,10 +484,16 @@ class PipelineTests(ModelDirTestCase):
         self.faces = [Face(0, 50, 50, 140, 140), Face(1, 250, 60, 120, 120)]
 
     def run_pipeline(self, faces=None, reg=None, **kwargs):
-        return run_ai_analysis(self.img, os.path.join(self.media, 'faces'), os.path.join(self.media, 'heatmaps'),
-                               os.path.join(self.media, 'processed'), registry=reg or self.registry(),
-                               detector=StubDetector(self.faces if faces is None else faces),
-                               ensemble_cfg=ens.EnsembleConfig(), **kwargs)
+        return run_ai_analysis(
+            self.img,
+            os.path.join(self.media, 'faces'),
+            os.path.join(self.media, 'heatmaps'),
+            os.path.join(self.media, 'processed'),
+            registry=reg or self.registry(),
+            detector=StubDetector(self.faces if faces is None else faces),
+            ensemble_cfg=ens.EnsembleConfig(),
+            **kwargs
+        )
 
     def test_every_face_is_analysed_independently(self):
         ai = self.run_pipeline()
@@ -525,17 +531,42 @@ class PipelineTests(ModelDirTestCase):
     def test_explanations_run_once_on_the_representative_face(self):
         reg = self.registry()
         reg.load_all()
-        explain = mock.patch.object(reg.detectors['vit_b16'], 'explain',
-                                    return_value={'available': True, 'method': 'grad-cam'})
+
+        explain = mock.patch.object(
+            reg.detectors['vit_b16'],
+            'explain',
+            return_value={'available': True, 'method': 'grad-cam'}
+        )
+
         events = []
-        with override_settings(AI_EXPLAIN_ENABLED=True, AI_EXPLAIN_MAX_FACES=1), explain as explain_call:
-            ai = self.run_pipeline(reg=reg, on_event=lambda kind, data: events.append((kind, data)))
+
+        with override_settings(
+            AI_EXPLAIN_ENABLED=True,
+            AI_EXPLAIN_MAX_FACES=1
+        ), explain as explain_call:
+
+            ai = self.run_pipeline(
+                reg=reg,
+                on_event=lambda kind, data: events.append((kind, data))
+            )
+
         self.assertEqual(explain_call.call_count, 1)
-        self.assertEqual(ai['faces'][0]['explanations']['vit_b16']['method'], 'grad-cam')
+        self.assertEqual(
+            ai['faces'][0]['explanations']['vit_b16']['method'],
+            'grad-cam'
+        )
         self.assertNotIn('vit_b16', ai['faces'][1]['explanations'])
         self.assertIn('explanations_ms', ai['timings_ms'])
-        model_events = [data for kind, data in events if kind == 'model' and data['key'] == 'vit_b16']
-        self.assertEqual([(event['face'], event['face_count']) for event in model_events], [(0, 2), (1, 2)])
+
+        model_events = [
+            data for kind, data in events
+            if kind == 'model' and data['key'] == 'vit_b16'
+        ]
+
+        self.assertEqual(
+            [(event['face'], event['face_count']) for event in model_events],
+            [(0, 2), (1, 2)]
+        )
 
     def test_no_face_means_no_model_runs(self):
         ai = self.run_pipeline(faces=[])

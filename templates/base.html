@@ -13,11 +13,11 @@
     {# Bootstrap Icons #}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-    {# Google Fonts — Inter for body text, Orbitron + Share Tech Mono for the HUD look #}
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    {# Google Fonts — Inter for body text, Space Grotesk for headings, Orbitron + Share Tech Mono for forensic HUD #}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Orbitron:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     {# DeepShield premium theme CSS #}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261115">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261110-orbit-cards2">
     <script nonce="{{ csp_nonce }}" src="{% static 'js/theme.js' %}?v=20261103"></script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath fill=%27%236366F1%27 d=%27M8 0l6 2v5c0 4-3 7-6 9-3-2-6-5-6-9V2z%27/%3E%3C/svg%3E">
 
@@ -33,8 +33,11 @@
                 <span>Deep<strong>Shield</strong></span>
             </a>
 
-            <div class="d-flex align-items-center gap-2 ms-auto order-lg-2">
-                {% if user.is_authenticated %}<button type="button" id="themeToggle" class="ds-theme-toggle" aria-label="Switch theme"><i class="bi bi-sun"></i></button>{% endif %}
+            <div class="d-flex align-items-center gap-2 ms-auto ms-lg-2 order-lg-2">
+                {% if user.is_authenticated %}
+                    <span class="ds-nav-divider d-none d-lg-inline-block" aria-hidden="true"></span>
+                    <button type="button" id="themeToggle" class="ds-theme-toggle" aria-label="Switch theme"><i class="bi bi-sun"></i></button>
+                {% endif %}
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -42,66 +45,65 @@
             </div>
 
             <div class="collapse navbar-collapse order-lg-1" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center gap-1">
-                    {% if user.is_authenticated %}
+                {% if user.is_authenticated %}
+                    <ul class="navbar-nav ds-nav-rail mx-lg-auto align-items-lg-center">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'upload' %}active{% endif %}" href="{% url 'upload' %}"><i class="bi bi-plus-circle me-1"></i>New Analysis</a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'history' %}active{% endif %}" href="{% url 'history' %}"><i class="bi bi-shield-check me-1"></i>Analysis</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'history' or request.resolver_match.url_name == 'result' or request.resolver_match.url_name == 'detail' or request.resolver_match.url_name == 'report' %}active{% endif %}" href="{% url 'history' %}"><i class="bi bi-collection me-1"></i>My Analyses</a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'upload' %}active{% endif %}" href="{% url 'upload' %}"><i class="bi bi-cloud-arrow-up me-1"></i>New Analysis</a>
                         </li>
-                        <li class="nav-item dropdown ms-lg-2">
-                            <button class="ds-profile-toggle dropdown-toggle" type="button" id="profileMenu"
-                                    data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true"
-                                    aria-label="Open account menu for {{ user.username }}">
-                                <span class="ds-nav-avatar" aria-hidden="true">{{ user.username|first|upper }}</span>
-                                <span class="ds-profile-name d-none d-md-inline">{{ user.username }}</span>
+                    </ul>
+                    <div class="ds-nav-actions d-flex align-items-center gap-2 mt-2 mt-lg-0">
+                        {# Profile dropdown #}
+                        <div class="dropdown ds-nav-profile-dropdown">
+                            <button class="ds-nav-avatar" id="navProfileMenu" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Profile menu for {{ user.username }}" title="{{ user.username }}">
+                                <i class="bi bi-person-fill"></i>
                             </button>
-                            <div class="dropdown-menu dropdown-menu-end ds-profile-menu" aria-labelledby="profileMenu">
-                                <div class="ds-profile-heading">
-                                    <span class="ds-profile-avatar" aria-hidden="true">{{ user.username|first|upper }}</span>
-                                    <div class="ds-profile-identity">
-                                        <strong>{{ user.get_full_name|default:user.username }}</strong>
-                                        <span>@{{ user.username }}</span>
-                                        {% if user.email %}<small>{{ user.email }}</small>{% endif %}
-                                    </div>
-                                </div>
-                                <a class="dropdown-item ds-profile-action" href="{% url 'account' %}">
-                                    <span class="ds-profile-action-icon"><i class="bi bi-person-gear"></i></span>
-                                    <span class="ds-profile-action-copy">
-                                        <strong>Account settings</strong>
-                                        <small>Profile, privacy and data</small>
-                                    </span>
-                                    <i class="bi bi-chevron-right ds-profile-action-chevron" aria-hidden="true"></i>
-                                </a>
-                                <div class="dropdown-divider"></div>
-                                <form method="post" action="{% url 'logout' %}" class="m-0">
-                                    {% csrf_token %}
-                                    <button type="submit" class="dropdown-item ds-profile-action ds-profile-logout">
-                                        <span class="ds-profile-action-icon"><i class="bi bi-box-arrow-right"></i></span>
-                                        <span class="ds-profile-action-copy"><strong>Sign out</strong></span>
-                                    </button>
-                                </form>
-                            </div>
-                        </li>
-                    {% else %}
+                            <ul class="dropdown-menu dropdown-menu-end ds-profile-dropdown" aria-labelledby="navProfileMenu">
+                                <li class="ds-profile-dropdown-header">
+                                    <span class="ds-profile-dropdown-name">{{ user.username }}</span>
+                                    <span class="ds-profile-dropdown-email">{{ user.email|default:"DeepShield account" }}</span>
+                                </li>
+                                <li><hr class="dropdown-divider ds-dropdown-divider"></li>
+                                <li><a class="dropdown-item ds-dropdown-item" href="{% url 'account' %}"><i class="bi bi-person-gear me-2"></i>Profile &amp; Data</a></li>
+                                <li><a class="dropdown-item ds-dropdown-item" href="{% url 'history' %}"><i class="bi bi-clock-history me-2"></i>Analysis History</a></li>
+                                <li><hr class="dropdown-divider ds-dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item ds-dropdown-item ds-dropdown-item--danger"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                        <span class="ds-nav-divider" aria-hidden="true"></span>
+                        {# Icon-only logout button #}
+                        <form method="post" action="{% url 'logout' %}" class="d-inline m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="ds-btn-logout" title="Sign out" aria-label="Sign out"><i class="bi bi-box-arrow-right"></i></button>
+                        </form>
+                    </div>
+                {% else %}
+                    <ul class="navbar-nav ds-nav-rail mx-lg-auto align-items-lg-center">
                         <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#how-it-works">How it works</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#models">Models</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#algorithms">Algorithms</a></li>
-                        <li class="nav-item ms-lg-2">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
-                        </li>
-                        <li class="nav-item ms-lg-1">
-                            <a class="ds-btn-register" href="{% url 'register' %}"><i class="bi bi-person-plus"></i><span>Get Started</span></a>
-                        </li>
-                    {% endif %}
-                </ul>
+                    </ul>
+                    <div class="ds-nav-actions d-flex align-items-center gap-2 mt-2 mt-lg-0">
+                        <a class="btn ds-btn-outline ds-nav-login {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a>
+                        {% if request.resolver_match.url_name != 'register' %}
+                            <span class="ds-nav-divider d-none d-lg-inline-block" aria-hidden="true"></span>
+                            <a class="btn ds-btn-primary ds-btn-register" href="{% url 'register' %}"><i class="bi bi-person-plus me-1"></i>Get Started</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
             </div>
         </div>
     </nav>
 
     {# ==================== FLASH MESSAGES ==================== #}
-    {% if messages %}
+    {% if messages and request.resolver_match.url_name != 'home' %}
     <div class="container mt-3" aria-live="polite">
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show ds-alert" role="alert">
@@ -118,7 +120,7 @@
     {% endif %}
 
     {# ==================== MAIN CONTENT ==================== #}
-    <main class="ds-main" id="main-content">
+    <main class="ds-main{% if request.resolver_match.url_name == 'upload' %} ds-main--upload{% endif %}" id="main-content">
         {% block content %}
         {% endblock %}
     </main>
@@ -138,7 +140,7 @@
                 </div>
             </div>
             <p class="text-muted small text-center mt-3 mb-0">
-                <i class="bi bi-info-circle me-1"></i>Results are probabilistic AI/forensic indicators, not proof of authenticity. Human review is recommended.
+                <i class="bi bi-info-circle me-1"></i>AI and forensic indicators are not proof of authenticity or manipulation. Human review is recommended.
             </p>
         </div>
     </footer>
@@ -147,7 +149,6 @@
 
     <script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script nonce="{{ csp_nonce }}" src="{% static 'js/main.js' %}?v=20261103"></script>
-    <script nonce="{{ csp_nonce }}" src="{% static 'js/cyber.js' %}"></script>
     {% block extra_scripts %}{% endblock %}
 
 </body>

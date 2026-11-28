@@ -110,6 +110,19 @@ class StageTests(JobTestCase):
         r = self.call('get', f'/analyses/{rec.public_id}/status/', self.bob)
         self.assertEqual((r.status_code, r.json()['error']['code']), (404, 'NOT_FOUND'))
         self.assertTrue(AuditLog.objects.filter(action='access_denied', user=self.bob).exists())
+    def test_live_model_events_identify_the_face(self):
+        rec = self.submit_queued()
+        jobs.push_live(rec.job.pk, 'model', {
+            'face': 1,
+            'face_count': 2,
+            'name': 'ViT-B/16',
+            'status': 'AVAILABLE'
+        })
+        rec.job.refresh_from_db()
+        self.assertEqual(
+            rec.job.live['events'][-1]['msg'],
+            'ViT-B/16 (face 2/2) finished'
+        )
 
 
 class CancellationTests(JobTestCase):
@@ -351,11 +364,27 @@ class WebJobTests(JobTestCase):
         page = self.client.get(f'/auth/processing/{rec.pk}/').content.decode()
         for stage in J.STAGES:
             self.assertIn(f'data-stage="{stage}"', page)
+        self.assertLess(page.index('aria-label="Processing log"'),
+                        page.index('aria-label="Image under analysis"'))
         main = page[page.index('<main'):page.index('</main>')]
         self.assertNotIn('%', main)                  # no progress percentages in the page content
+        self.assertIn('id="pollIssue"', page)
+        self.assertIn('id="retryStatus"', page)
+        self.assertIn('View analysis history', page)
+        self.assertIn('Sign in again', page)
+        self.assertIn('automatically', page)
         st = self.client.get(f'/auth/processing/{rec.pk}/status/').json()
         self.assertEqual((st['status'], st['finished'], st['stage_total']), ('QUEUED', False, 8))
         self.assertRedirects(self.client.get(f'/auth/analysis/{rec.pk}/'), f'/auth/processing/{rec.pk}/')   # result waits for the job
+
+    def test_upload_progress_does_not_claim_unconfirmed_steps_are_done(self):
+        self.client.force_login(self.alice)
+        page = self.client.get('/auth/upload/').content.decode()
+        self.assertIn('Submitting your image for analysis', page)
+        self.assertIn('The next screen will show confirmed processing stages', page)
+        self.assertNotIn('Image uploaded and validated', page)
+        self.assertNotIn('SHA-256 fingerprint generated', page)
+        self.assertNotIn('This may take 15–45 seconds', page)
 
     def test_processing_pages_are_owner_only_and_finish_to_result(self):
         rec = self.submit_queued()

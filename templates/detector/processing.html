@@ -18,15 +18,8 @@
   </div>
 
   <div class="rs-layout">
-    {# ---------- left: the photo with the live face mask ---------- #}
-    <section class="rs-card" aria-label="Image under analysis">
-      <p class="rs-card-title"><span>Image under analysis</span><span id="faceCount" class="text-muted">searching…</span></p>
-      <div class="rs-stage" id="stage" data-src="{{ upload.image.url }}"></div>
-      <div class="rs-readout" id="readout" aria-live="polite">Looking for faces…</div>
-    </section>
-
-    {# ---------- right: stages + real processing log ---------- #}
-    <section class="rs-card" aria-label="Processing log">
+    {# ---------- primary: stages + real processing log ---------- #}
+    <section class="rs-card rs-card--progress" aria-label="Processing log">
       <ol class="visually-hidden" aria-label="Pipeline stages">{% for st in job.stages %}<li data-stage="{{ st }}">{{ st }}</li>{% endfor %}</ol>
       <div class="rs-stepbar" id="stepbar" aria-hidden="true">
         <div class="rs-step" data-s="0"><i></i>Upload</div>
@@ -38,21 +31,41 @@
       <p class="rs-card-title"><span>Processing log</span><span id="liveTag" style="color: var(--accent-2);">live</span></p>
       <div class="rs-log" id="log" aria-live="polite" role="log"></div>
       <p class="rs-note">Each line is a real step reported by the analysis worker; nothing is estimated. When every step is done, this log is replaced by the results of each model and forensic test, and you can open any row for its details.</p>
+      <div id="pollIssue" class="alert alert-warning mt-3 d-none" role="alert">
+        <p id="pollIssueMessage" class="mb-2"></p>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn ds-btn-outline btn-sm" id="retryStatus">Check again</button>
+          <a class="btn ds-btn-outline btn-sm" href="{% url 'history' %}">View analysis history</a>
+          <a class="btn ds-btn-outline btn-sm d-none" id="signInLink" href="{% url 'login' %}">Sign in again</a>
+        </div>
+      </div>
       <div id="msg" class="visually-hidden" role="status">Status: <span id="status">{{ job.status }}</span></div>
+    </section>
+
+    {# ---------- supporting: the photo with the live face mask ---------- #}
+    <section class="rs-card rs-card--image" aria-label="Image under analysis">
+      <p class="rs-card-title"><span>Image under analysis</span><span id="faceCount" class="text-muted">searching…</span></p>
+      <div class="rs-stage" id="stage" data-src="{{ upload.image.url }}"></div>
+      <div class="rs-readout" id="readout" aria-live="polite">Looking for faces…</div>
     </section>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script nonce="{{ csp_nonce }}" src="{% static 'js/face_mask.js' %}"></script>
+<script nonce="{{ csp_nonce }}" src="{% static 'js/face_mask.js' %}?v=20261104"></script>
 <script nonce="{{ csp_nonce }}">
 (function () {
   var url = "{% url 'job_status' upload.pk %}", done = "{% url 'result' upload.pk %}";
   var filename = "{{ upload.original_filename|default:'image'|escapejs }}";
   var stageEl = document.getElementById('stage');
-  var fm = new DSFaceMask(stageEl, {src: stageEl.dataset.src, mode: 'processing', label: 'Your uploaded photo while it is being analysed'});
+  var fm = new DSFaceMask(stageEl, {src: stageEl.dataset.src, mode: 'processing', label: 'Your uploaded photo while it is being analyzed'});
   var start = Date.now(), log = document.getElementById('log'), lastSig = '', finishing = false;
+  var pollTimer = null, elapsedTimer = null, retryCount = 0;
+  var issue = document.getElementById('pollIssue');
+  var issueMessage = document.getElementById('pollIssueMessage');
+  var retryButton = document.getElementById('retryStatus');
+  var signInLink = document.getElementById('signInLink');
   var STEP = {QUEUED: 0, VALIDATING: 0, FACE_DETECTION: 1, AI_ANALYSIS: 2, FORENSIC_ANALYSIS: 3, AGGREGATING: 4, REPORT_GENERATION: 4, COMPLETED: 5};
   var WHAT = {
     QUEUED: 'Waiting for a free worker to pick up your image.',
@@ -65,7 +78,7 @@
   };
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
-  setInterval(function () { var s = Math.floor((Date.now() - start) / 1000); document.getElementById('elapsed').textContent = pad(Math.floor(s / 60)) + ':' + pad(s % 60); }, 500);
+  elapsedTimer = setInterval(function () { var s = Math.floor((Date.now() - start) / 1000); document.getElementById('elapsed').textContent = pad(Math.floor(s / 60)) + ':' + pad(s % 60); }, 500);
 
   function line(t, level, msg) {
     var sym = {ok: 'OK', run: '..', warn: '!'}[level] || 'OK';
@@ -105,18 +118,72 @@
     }
   }
 
-  function finish() {
+  function finish(d) {
     if (finishing) { return; } finishing = true;
-    document.getElementById('liveTag').textContent = 'finished';
-    fm.setStage('COMPLETED', 1);
+    clearInterval(elapsedTimer);
+    if (pollTimer) clearTimeout(pollTimer);
+    document.getElementById('liveTag').textContent = d.status === 'COMPLETED' ? 'finished' : d.status.toLowerCase();
+    if (d.status === 'COMPLETED') fm.setStage('COMPLETED', 1);
     setTimeout(function () { window.location = done; }, 900);
   }
-  function poll() {
-    fetch(url, {credentials: 'same-origin'}).then(function (r) { return r.json(); }).then(function (d) {
-      paint(d);
-      if (d.finished) { finish(); } else { setTimeout(poll, 800); }
-    }).catch(function () { setTimeout(poll, 3000); });
+
+  function showIssue(message, needsSignIn) {
+    issueMessage.textContent = message;
+    issue.classList.remove('d-none');
+    signInLink.classList.toggle('d-none', !needsSignIn);
+    document.getElementById('liveTag').textContent = 'connection issue';
   }
+
+  function scheduleRetry() {
+    var delay = Math.min(15000, 2000 * Math.pow(2, Math.min(retryCount, 3)));
+    retryCount += 1;
+    pollTimer = setTimeout(poll, delay);
+  }
+
+  function poll() {
+    if (finishing) return;
+    retryButton.disabled = true;
+    var controller = new AbortController();
+    var timeout = setTimeout(function () { controller.abort(); }, 15000);
+    fetch(url, {credentials: 'same-origin', signal: controller.signal}).then(function (r) {
+      if (r.redirected || r.status === 401 || r.status === 403) {
+        var authError = new Error('Your session may have ended. Sign in again, then check your analysis history.');
+        authError.needsSignIn = true;
+        throw authError;
+      }
+      if (r.status === 404) {
+        var missingError = new Error('This analysis is no longer available. Check your analysis history or start a new analysis.');
+        missingError.stopRetrying = true;
+        throw missingError;
+      }
+      if (!r.ok) throw new Error('The analysis status could not be checked.');
+      return r.json();
+    }).then(function (d) {
+      if (!d || typeof d.status !== 'string' || typeof d.finished !== 'boolean') {
+        throw new Error('The analysis status response was incomplete.');
+      }
+      retryCount = 0;
+      issue.classList.add('d-none');
+      signInLink.classList.add('d-none');
+      document.getElementById('liveTag').textContent = 'live';
+      paint(d);
+      if (d.finished) { finish(d); } else { pollTimer = setTimeout(poll, 800); }
+    }).catch(function (error) {
+      var needsSignIn = !!error.needsSignIn;
+      showIssue(needsSignIn ? error.message :
+        (error.stopRetrying ? error.message : 'The connection was interrupted, so the latest status is not available. We’ll keep checking automatically; you can also check again or return to your history.'), needsSignIn);
+      if (!error.stopRetrying && !needsSignIn) scheduleRetry();
+    }).finally(function () {
+      clearTimeout(timeout);
+      retryButton.disabled = false;
+    });
+  }
+
+  retryButton.addEventListener('click', function () {
+    if (pollTimer) clearTimeout(pollTimer);
+    retryCount = 0;
+    poll();
+  });
   poll();
 })();
 </script>

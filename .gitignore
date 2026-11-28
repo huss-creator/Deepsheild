@@ -32,6 +32,20 @@ media/
 # VS Code settings
 .vscode/
 
+# Local agent skills and configuration
+.agent/
+.agents/
+.claude/
+.github/skills/
+.github/agents/
+.github/hooks/
+.impeccable/config.local.json
+.impeccable/design.json
+.impeccable/critique/
+.impeccable/live/
+.mcp.json
+skills-lock.json
+
 # PyCharm settings
 .idea/
 
@@ -62,3 +76,4 @@ trained_models/*/*
 !trained_models/*/.gitkeep
 trained_models/models.json
 trained_models/ensemble_config.json
+trained_models/models.json.bak

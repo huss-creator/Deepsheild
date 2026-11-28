@@ -148,10 +148,19 @@ def push_live(job_id, kind, data):
             face = data.get('face', 0) + 1
             faces = data.get('face_count', 1)
             subject = f'{data.get("name")} (face {face}/{faces})'
+
             if data.get('status') == 'AVAILABLE':
-                events.append({'t': t, 'level': 'ok', 'msg': f'{subject} finished'})
+                events.append({
+                    't': t,
+                    'level': 'ok',
+                    'msg': f'{subject} finished'
+                })
             else:
-                events.append({'t': t, 'level': 'warn', 'msg': f'{subject} unavailable'})
+                events.append({
+                    't': t,
+                    'level': 'warn',
+                    'msg': f'{subject} unavailable'
+                })
         elif kind == 'forensic':
             events.append({'t': t, 'level': 'ok', 'msg': f'Forensic test done: {data.get("name")}'})
         elif kind == 'msg':
